@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Same as `values/styles.xml`, for devices with the OS's Dark Mode setting
+      ON. The launch screen is intentionally the identical brand emerald in both
+      modes; only the Flutter window background differs (via
+      `values-night/colors.xml`).
+    -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+
+    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">@color/zad_surface</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+</resources>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Theme applied to the Android window while the process is starting, when
+      the OS's Dark Mode setting is OFF.
+
+      `launch_background` is the branded Zad launch screen (emerald field + gold
+      Khatam mark) rather than the Flutter template's plain white placeholder.
+    -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <!-- The launch screen is already brand-correct; force-dark would
+             recolour it. -->
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+
+    <!--
+      Theme applied to the Android window as soon as the process has started.
+      It determines the window colour while the Flutter UI initialises and
+      behind the Flutter UI afterwards, so it matches the app surface instead of
+      `?android:colorBackground` — otherwise a resize or a slow frame flashes a
+      shade the app never uses.
+    -->
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@color/zad_surface</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+</resources>

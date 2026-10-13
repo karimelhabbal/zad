@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a2a1f" />
+      <stop offset="50%" stop-color="#134e3a" />
+      <stop offset="100%" stop-color="#071d15" />
+    </linearGradient>
+
+    <!-- Gold Gradients for borders & geometry -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fdf2cc" />
+      <stop offset="30%" stop-color="#e5c158" />
+      <stop offset="70%" stop-color="#caa44b" />
+      <stop offset="100%" stop-color="#9a7522" />
+    </linearGradient>
+
+    <!-- Vibrant Pure Gold for Typography (High Contrast & Legibility) -->
+    <linearGradient id="textGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="20%" stop-color="#faecc0" />
+      <stop offset="60%" stop-color="#eac25a" />
+      <stop offset="100%" stop-color="#cca03d" />
+    </linearGradient>
+
+    <linearGradient id="innerGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.16" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.25" />
+    </linearGradient>
+
+    <!-- Deep Drop Shadow for Central Elements -->
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#020806" flood-opacity="0.65" />
+    </filter>
+
+    <filter id="textShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#020906" flood-opacity="0.8" />
+    </filter>
+  </defs>
+
+  <!-- Base Squircle Shape -->
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#bgGrad)" />
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#innerGlow)" />
+  
+  <!-- Outer Gold Border -->
+  <rect x="18" y="18" width="476" height="476" rx="106" fill="none" stroke="url(#goldGrad)" stroke-width="3" stroke-opacity="0.55" />
+  <rect x="26" y="26" width="460" height="460" rx="98" fill="none" stroke="url(#goldGrad)" stroke-width="1.2" stroke-opacity="0.25" stroke-dasharray="6,4" />
+
+  <!-- Background Islamic Arabesque Subtle Rays & Circles -->
+  <g opacity="0.07" stroke="#ffffff" stroke-width="1.5" fill="none">
+    <circle cx="256" cy="256" r="210" />
+    <circle cx="256" cy="256" r="180" />
+    <circle cx="256" cy="256" r="150" />
+    <line x1="256" y1="46" x2="256" y2="466" />
+    <line x1="46" y1="256" x2="466" y2="256" />
+    <line x1="107" y1="107" x2="405" y2="405" />
+    <line x1="107" y1="405" x2="405" y2="107" />
+  </g>
+
+  <!-- Islamic Eight-Pointed Star Medallion (Khatim / Rub El Hizb) from Image 3 -->
+  <!-- Square 1 (Straight) -->
+  <rect x="120" y="120" width="272" height="272" rx="36" fill="#0d3b2b" stroke="url(#goldGrad)" stroke-width="3" filter="url(#shadow)" />
+  
+  <!-- Square 2 (Rotated 45deg) -->
+  <rect x="120" y="120" width="272" height="272" rx="36" fill="#114533" fill-opacity="0.85" stroke="url(#goldGrad)" stroke-width="3" transform="rotate(45 256 256)" filter="url(#shadow)" />
+
+  <!-- Concentric Layer 2 of Islamic Star Geometry -->
+  <g fill="none" stroke="url(#goldGrad)" stroke-width="1.8" stroke-opacity="0.8">
+    <polygon points="256,112 298,214 400,256 298,298 256,400 214,298 112,256 214,214" />
+    <polygon points="154,154 256,196 358,154 316,256 358,358 256,316 154,358 196,256" />
+  </g>
+
+  <!-- Inner Sacred Circle Base -->
+  <circle cx="256" cy="256" r="118" fill="#09281d" stroke="url(#goldGrad)" stroke-width="2.5" />
+  <circle cx="256" cy="256" r="110" fill="none" stroke="url(#goldGrad)" stroke-width="1" stroke-opacity="0.4" stroke-dasharray="3,3" />
+
+  <!-- Decorative Corner Jewels on Star Tips -->
+  <circle cx="256" cy="112" r="5" fill="url(#goldGrad)" />
+  <circle cx="400" cy="256" r="5" fill="url(#goldGrad)" />
+  <circle cx="256" cy="400" r="5" fill="url(#goldGrad)" />
+  <circle cx="112" cy="256" r="5" fill="url(#goldGrad)" />
+  <circle cx="154" cy="154" r="4" fill="url(#goldGrad)" />
+  <circle cx="358" cy="154" r="4" fill="url(#goldGrad)" />
+  <circle cx="358" cy="358" r="4" fill="url(#goldGrad)" />
+  <circle cx="154" cy="358" r="4" fill="url(#goldGrad)" />
+
+  <!-- CENTRAL CLEAR TYPOGRAPHY "زاد" (Crisp, High-Legibility, Clean Arabic Letterforms) -->
+  <g id="clear-calligraphy" filter="url(#textShadow)" fill="url(#textGold)">
+    
+    <!-- Letter Zay (ز) - Clear, bold, graceful curve (RTL: rightmost) -->
+    <!-- Head of Zay at (336, 218) cascading smoothly down to (274, 308) -->
+    <path d="M 334 220 C 334 246 324 274 306 292 C 288 310 266 318 244 318 C 230 318 220 314 212 308 C 206 303 210 294 218 294 C 238 294 256 284 270 268 C 284 252 290 236 292 220 C 292 214 300 212 306 212 C 314 212 334 212 334 220 Z" />
+    
+    <!-- Diamond Dot of Zay (نقطة الزاي) - crisp & distinctly placed above Zay -->
+    <polygon points="320,166 332,178 320,190 308,178" />
+
+    <!-- Letter Alif (ا) - Strong upright pillar in center (248 to 260) -->
+    <rect x="250" y="168" width="13" height="126" rx="6.5" />
+
+    <!-- Letter Dal (د) - Clean, prominent leftward bracket letterform -->
+    <!-- Starts at right top (218, 230), angles down left (176, 266), flat base along line (172 to 226) -->
+    <path d="M 218 228 C 218 220 206 220 202 226 C 194 242 182 260 166 272 C 160 276 164 284 172 284 L 222 284 C 228 284 232 280 232 274 C 232 268 226 268 222 268 L 194 268 C 202 258 210 246 216 236 C 218 232 218 230 218 228 Z" />
+
+    <!-- Subtle Tashkeel: Fatha above for authentic Arabic aesthetic -->
+    <rect x="312" y="146" width="22" height="5" rx="2.5" transform="rotate(-30 323 148)" fill="url(#textGold)" opacity="0.95" />
+  </g>
+
+  <!-- Bottom Brand Sub-text English "Z A D" with wide letter-spacing -->
+  <text x="256" y="440" font-family="'Cinzel', 'Noto Serif', serif" font-size="19" font-weight="600" letter-spacing="9" fill="url(#goldGrad)" fill-opacity="0.85" text-anchor="middle">Z A D</text>
+
+  <!-- Specular Light Reflection Sheen on Top -->
+  <path d="M 24 100 C 24 56 56 24 100 24 L 412 24 C 456 24 488 56 488 100 C 488 120 380 180 256 180 C 132 180 24 120 24 100 Z" fill="#ffffff" fill-opacity="0.05" />
+</svg>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Native launch screen: the Zad emerald field. Also used as the Android
+         12+ `windowSplashScreenBackground`, where it matches the mid tone of
+         drawable/splash_background.xml. -->
+    <color name="zad_splash_background">#0B4634</color>
+
+    <!-- The Flutter surface colour, so the window behind the Flutter UI never
+         flashes a different shade during startup or on a resize. Mirrors
+         ZadPalette.lightSurface in lib/core/theme/app_colors.dart. -->
+    <color name="zad_surface">#FBF9F4</color>
+</resources>

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<meta content="mobile_stack" name="shell-type"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=Noto+Serif:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#003626",
+            "primary-container": "#134e3a",
+            "on-primary": "#ffffff",
+            "secondary": "#7b581d",
+            "secondary-container": "#ffd089",
+            "secondary-fixed": "#ffddaf",
+            "on-secondary-fixed-variant": "#604105",
+            "surface": "#fbf9f4",
+            "surface-dim": "#dbdad5",
+            "surface-bright": "#fbf9f4",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-low": "#f5f3ee",
+            "surface-container": "#f0eee9",
+            "surface-container-high": "#eae8e3",
+            "surface-container-highest": "#e4e2dd",
+            "on-surface": "#1b1c19",
+            "on-surface-variant": "#404944",
+            "outline": "#707974",
+            "outline-variant": "#c0c9c2",
+            "tertiary": "#0b3529",
+            "tertiary-container": "#254c3f",
+            "gold": "#c99e5c",
+            "gold-light": "#fef7ed"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "2xl": "1rem",
+            "3xl": "1.5rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            "headline-md": ["Noto Serif", "serif"],
+            "headline-sm": ["Noto Serif", "serif"],
+            "body-lg": ["IBM Plex Sans", "sans-serif"],
+            "body-md": ["IBM Plex Sans", "sans-serif"],
+            "body-sm": ["IBM Plex Sans", "sans-serif"],
+            "label-lg": ["IBM Plex Sans", "sans-serif"],
+            "label-md": ["IBM Plex Sans", "sans-serif"],
+            "label-sm": ["IBM Plex Sans", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    @layer base {
+      html, body {
+        width: 100vw;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+      }
+      body {
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 16px);
+      }
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+    }
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-surface font-body-md text-on-surface min-h-screen flex flex-col relative select-none antialiased">
+<!-- BACKGROUND: Screen 2 Underlying Layout (Visible with soft blur & dark veil) -->
+<div aria-hidden="true" class="fixed inset-0 flex flex-col bg-surface overflow-hidden pointer-events-none filter blur-[2.5px] scale-[0.99] select-none">
+<!-- Header of Background Screen -->
+<header class="h-16 px-4 pt-safe flex items-center justify-between border-b border-outline-variant/30 bg-surface/90">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[24px] text-primary">arrow_forward</span>
+<span class="font-headline-sm text-primary font-bold">Surah Reading View</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[22px]">bookmark_border</span>
+<div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">زاد</div>
+</div>
+</header>
+<!-- Underlying Dhikr Content preview -->
+<div class="p-4 flex flex-col gap-4 opacity-50">
+<div class="flex items-center justify-between bg-surface-container p-3 rounded-2xl">
+<div class="flex items-center gap-2 text-secondary font-medium">
+<span class="material-symbols-outlined">light_mode</span>
+<span>الورد الصباحي المبارك</span>
+</div>
+<span class="text-sm">الذكر ٤ من ٢٤</span>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-3xl shadow-sm text-center flex flex-col gap-3">
+<span class="text-xs px-3 py-1 bg-secondary-fixed text-on-secondary-fixed-variant rounded-full mx-auto font-semibold">سيّد الاستغفار</span>
+<p class="font-headline-md text-primary text-xl leading-relaxed">
+          «اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ...»
+        </p>
+</div>
+</div>
+</div>
+<!-- Soft Dimmed Backdrop Overlay -->
+<div class="fixed inset-0 z-30 bg-[#001f16]/55 backdrop-blur-[4px] transition-opacity duration-300"></div>
+<!-- BOTTOM SHEET MODAL (Occupying lower ~85% of mobile screen) -->
+<div class="fixed inset-x-0 bottom-0 z-40 flex flex-col max-h-[88dvh] h-[85dvh] bg-[#fbf9f4] rounded-t-[32px] shadow-[0_-8px_32px_rgba(0,38,27,0.22)] border-t border-[#e8e4db] overflow-hidden">
+<!-- Drag Handle Area -->
+<div class="w-full pt-3 pb-1 flex items-center justify-center shrink-0 cursor-grab">
+<div class="w-12 h-1.5 rounded-full bg-outline-variant/80"></div>
+</div>
+<!-- Modal Header Section -->
+<div class="px-5 pt-2 pb-3.5 flex flex-col gap-3 bg-[#fbf9f4] shrink-0 border-b border-surface-container-high/60">
+<!-- Title & Close Button -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-10 h-10 rounded-2xl bg-primary-container/10 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-[19px] font-bold text-primary leading-tight">فهرس أذكار الصباح</h1>
+<p class="font-label-md text-[13px] text-on-surface-variant font-medium">قائمة الورد المبارك — ٢٤ ذكراً</p>
+</div>
+</div>
+<!-- Quick Close (X) Button (Top Left in RTL) -->
+<button aria-label="إغلاق" class="w-9 h-9 rounded-full bg-surface-container hover:bg-surface-container-highest active:scale-95 flex items-center justify-center text-on-surface-variant hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Progress Summary Card (4 of 24 completed - 17%) -->
+<div class="bg-surface-container-low/90 rounded-2xl p-3 border border-outline-variant/30 flex flex-col gap-2">
+<div class="flex items-center justify-between text-[13px] font-medium">
+<div class="flex items-center gap-1.5 text-primary">
+<span class="material-symbols-outlined text-[17px] text-gold" style="font-variation-settings: 'FILL' 1;">task_alt</span>
+<span>الإنجاز: <strong class="font-bold">٤ من ٢٤</strong> مكتملاً</span>
+</div>
+<span class="text-secondary font-bold text-[13px]">١٧٪ مكتمل</span>
+</div>
+<!-- Segmented / Gradient Progress Bar -->
+<div class="w-full h-2 rounded-full bg-surface-container-highest overflow-hidden flex">
+<div class="h-full bg-gradient-to-l from-gold to-primary-container rounded-full" style="width: 17%;"></div>
+</div>
+</div>
+<!-- Search Input -->
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-[19px] text-outline">search</span>
+<input class="w-full h-10 pr-10 pl-4 rounded-xl bg-surface-container-lowest border border-outline-variant/40 text-[14px] text-on-surface placeholder:text-outline focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container shadow-2xs font-body-md" placeholder="ابحث في أذكار الورد..." type="text"/>
+</div>
+<!-- Quick Filter Chips -->
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar pt-0.5">
+<button class="filter-chip active px-3.5 py-1 rounded-full bg-primary text-on-primary font-label-md text-[13px] font-medium shrink-0 transition-colors shadow-2xs flex items-center gap-1">
+<span>الكل</span>
+<span class="text-[11px] opacity-80">(٢٤)</span>
+</button>
+<button class="filter-chip px-3.5 py-1 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-[13px] font-medium shrink-0 transition-colors flex items-center gap-1">
+<span>المتبقية</span>
+<span class="text-[11px] opacity-75">(٢٠)</span>
+</button>
+<button class="filter-chip px-3.5 py-1 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-[13px] font-medium shrink-0 transition-colors flex items-center gap-1">
+<span>المكتملة</span>
+<span class="text-[11px] text-secondary font-semibold">(٤)</span>
+</button>
+</div>
+</div>
+<!-- Scrollable Dhikr List (Items 1 through 8 as requested) -->
+<div class="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2.5 divide-y-0" id="dhikr-list">
+<!-- Item 1 (Completed) -->
+<div class="bg-surface-container-lowest rounded-2xl p-3.5 flex items-center justify-between gap-3 border border-outline-variant/20 shadow-2xs transition-all hover:bg-surface-container-lowest/90">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="min-w-0 flex flex-col">
+<div class="flex items-center gap-2">
+<h3 class="font-headline-sm text-[15px] text-on-surface font-bold truncate">أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ...</h3>
+<span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-semibold shrink-0">تمت القراءة ✓</span>
+</div>
+<p class="text-[12px] text-outline truncate mt-0.5 font-body-sm">«وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ...»</p>
+<span class="text-[11px] text-outline-variant font-medium mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">repeat</span> ١ مرة
+            </span>
+</div>
+</div>
+<button aria-label="استمع" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-outline hover:text-primary shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[18px]">volume_up</span>
+</button>
+</div>
+<!-- Item 2 (Completed) -->
+<div class="bg-surface-container-lowest rounded-2xl p-3.5 flex items-center justify-between gap-3 border border-outline-variant/20 shadow-2xs transition-all hover:bg-surface-container-lowest/90">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="min-w-0 flex flex-col">
+<div class="flex items-center gap-2">
+<h3 class="font-headline-sm text-[15px] text-on-surface font-bold truncate">آية الكرسي</h3>
+<span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-semibold shrink-0">تمت القراءة ✓</span>
+</div>
+<p class="text-[12px] text-outline truncate mt-0.5 font-body-sm">«اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ...»</p>
+<span class="text-[11px] text-outline-variant font-medium mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">repeat</span> ١ مرة
+            </span>
+</div>
+</div>
+<button aria-label="استمع" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-outline hover:text-primary shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[18px]">volume_up</span>
+</button>
+</div>
+<!-- Item 3 (Completed) -->
+<div class="bg-surface-container-lowest rounded-2xl p-3.5 flex items-center justify-between gap-3 border border-outline-variant/20 shadow-2xs transition-all hover:bg-surface-container-lowest/90">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="min-w-0 flex flex-col">
+<div class="flex items-center gap-2">
+<h3 class="font-headline-sm text-[15px] text-on-surface font-bold truncate">المعوذات (الإخلاص والفلق والناس)</h3>
+<span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-semibold shrink-0">تمت القراءة ✓</span>
+</div>
+<p class="text-[12px] text-outline truncate mt-0.5 font-body-sm">«قُلْ هُوَ اللَّهُ أَحَدٌ...» ثلاث مرات تكفيك من كل شيء</p>
+<span class="text-[11px] text-outline-variant font-medium mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">repeat</span> ٣ مرات
+            </span>
+</div>
+</div>
+<button aria-label="استمع" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-outline hover:text-primary shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[18px]">volume_up</span>
+</button>
+</div>
+<!-- Item 4 (Current Active - Highlighted with gold/emerald border & soft glow) -->
+<div class="relative bg-surface-container-lowest rounded-2xl p-4 flex flex-col gap-2.5 border-2 border-gold shadow-[0_4px_18px_rgba(201,158,92,0.18)] ring-2 ring-primary-container/10 overflow-hidden">
+<!-- Right Glow Stripe for RTL -->
+<div class="absolute right-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-gold to-primary-container"></div>
+<div class="flex items-center justify-between gap-2">
+<div class="flex items-center gap-2.5 min-w-0">
+<!-- Distinct Active Numeric Badge -->
+<div class="w-10 h-10 rounded-xl bg-gold/15 text-gold border border-gold/30 flex items-center justify-center font-headline-sm text-[16px] font-bold shrink-0">
+              ٤
+            </div>
+<div class="min-w-0">
+<div class="flex items-center gap-2 flex-wrap">
+<h3 class="font-headline-sm text-[16px] text-primary font-bold">سيد الاستغفار</h3>
+<span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant text-[11px] font-bold flex items-center gap-1 shrink-0">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary animate-ping"></span>
+                  قيد القراءة الآن ⏱
+                </span>
+</div>
+<p class="text-[12.5px] text-primary-container font-medium truncate mt-0.5 font-body-sm">
+                «اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ...»
+              </p>
+</div>
+</div>
+<!-- Audio Wave Action -->
+<button aria-label="تلاوة صوتية" class="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center shrink-0 shadow-sm hover:scale-105 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">graphic_eq</span>
+</button>
+</div>
+<div class="flex items-center justify-between pt-1 border-t border-surface-container text-[12px] text-on-surface-variant">
+<span class="flex items-center gap-1 font-semibold text-primary">
+<span class="material-symbols-outlined text-[14px]">repeat</span>
+            المطلوب: ١ مرة
+          </span>
+<span class="text-gold font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+            الذكر الحالي في وردك
+          </span>
+</div>
+</div>
+<!-- Item 5 (Upcoming) -->
+<div class="bg-surface-container-lowest/80 rounded-2xl p-3.5 flex items-center justify-between gap-3 border border-outline-variant/15 shadow-2xs hover:bg-surface-container-lowest transition-all">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center font-bold text-sm text-outline shrink-0">
+            ٥
+          </div>
+<div class="min-w-0 flex flex-col">
+<h3 class="font-headline-sm text-[15px] text-on-surface font-semibold truncate">رضيت بالله رباً وبالإسلام ديناً...</h3>
+<p class="text-[12px] text-on-surface-variant truncate mt-0.5 font-body-sm">«وَبِمُحَمَّدٍ نَبِيًّا» كان حقاً على الله أن يرضيه يوم القيامة</p>
+<span class="text-[11px] text-outline font-medium mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">repeat</span> ٣ مرات
+            </span>
+</div>
+</div>
+<button aria-label="عرض" class="w-8 h-8 rounded-full bg-surface-container-low flex items-center justify-center text-outline hover:text-primary shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+</button>
+</div>
+<!-- Item 6 (Upcoming) -->
+<div class="bg-surface-container-lowest/80 rounded-2xl p-3.5 flex items-center justify-between gap-3 border border-outline-variant/15 shadow-2xs hover:bg-surface-container-lowest transition-all">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center font-bold text-sm text-outline shrink-0">
+            ٦
+          </div>
+<div class="min-w-0 flex flex-col">
+<h3 class="font-headline-sm text-[15px] text-on-surface font-semibold truncate">بسم الله الذي لا يضر مع اسمه شيء...</h3>
+<p class="text-[12px] text-on-surface-variant truncate mt-0.5 font-body-sm">«فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ»</p>
+<span class="text-[11px] text-outline font-medium mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">repeat</span> ٣ مرات
+            </span>
+</div>
+</div>
+<button aria-label="عرض" class="w-8 h-8 rounded-full bg-surface-container-low flex items-center justify-center text-outline hover:text-primary shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+</button>
+</div>
+<!-- Item 7 (Upcoming) -->
+<div class="bg-surface-container-lowest/80 rounded-2xl p-3.5 flex items-center justify-between gap-3 border border-outline-variant/15 shadow-2xs hover:bg-surface-container-lowest transition-all">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center font-bold text-sm text-outline shrink-0">
+            ٧
+          </div>
+<div class="min-w-0 flex flex-col">
+<h3 class="font-headline-sm text-[15px] text-on-surface font-semibold truncate">يا حي يا قيوم برحمتك أستغيث...</h3>
+<p class="text-[12px] text-on-surface-variant truncate mt-0.5 font-body-sm">«أَصْلِحْ لِي شَأْنِي كُلَّهُ، وَلَا تَكِلْنِي إِلَى نَفْسِي طَرْفَةَ عَيْنٍ»</p>
+<span class="text-[11px] text-outline font-medium mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">repeat</span> ١ مرة
+            </span>
+</div>
+</div>
+<button aria-label="عرض" class="w-8 h-8 rounded-full bg-surface-container-low flex items-center justify-center text-outline hover:text-primary shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+</button>
+</div>
+<!-- Item 8 (Upcoming) -->
+<div class="bg-surface-container-lowest/80 rounded-2xl p-3.5 flex items-center justify-between gap-3 border border-outline-variant/15 shadow-2xs hover:bg-surface-container-lowest transition-all">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center font-bold text-sm text-outline shrink-0">
+            ٨
+          </div>
+<div class="min-w-0 flex flex-col">
+<div class="flex items-center gap-2">
+<h3 class="font-headline-sm text-[15px] text-on-surface font-semibold truncate">سُبْحَانَ اللَّهِ وَبِحَمْدِهِ</h3>
+<span class="px-2 py-0.2 bg-secondary-container/50 text-secondary font-bold text-[10px] rounded-full">مسبحة رقمية</span>
+</div>
+<p class="text-[12px] text-on-surface-variant truncate mt-0.5 font-body-sm">حُطَّت خطاياه وإن كانت مثل زَبَد البحر</p>
+<span class="text-[11px] text-secondary font-semibold mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">repeat</span> ١٠٠ مرة
+            </span>
+</div>
+</div>
+<button aria-label="عرض" class="w-8 h-8 rounded-full bg-surface-container-low flex items-center justify-center text-outline hover:text-primary shrink-0 transition-colors">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+</button>
+</div>
+</div>
+<!-- Bottom Sticky Footer Inside Modal -->
+<div class="p-4 bg-surface-container-lowest border-t border-surface-container-high shadow-[0_-4px_16px_rgba(0,0,0,0.03)] shrink-0 flex flex-col gap-2 pb-safe">
+<!-- Primary Action Button -->
+<button class="w-full h-12 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-headline-sm text-[15px] font-semibold flex items-center justify-center gap-2 shadow-md active:scale-[0.99] transition-all">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+<span>متابعة القراءة: سيد الاستغفار (الذكر ٤)</span>
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+</button>
+<!-- Secondary Action Text Button -->
+<div class="flex items-center justify-center">
+<button class="text-on-surface-variant hover:text-error text-[13px] font-medium py-1 px-3 transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">restart_alt</span>
+<span>إعادة ضبط تقدم الورد</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Interactive script for filter chips -->
+<script>
+    const filterChips = document.querySelectorAll('.filter-chip');
+    filterChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        filterChips.forEach(c => {
+          c.classList.remove('bg-primary', 'text-on-primary');
+          c.classList.add('bg-surface-container', 'text-on-surface-variant');
+        });
+        chip.classList.remove('bg-surface-container', 'text-on-surface-variant');
+        chip.classList.add('bg-primary', 'text-on-primary');
+      });
+    });
+  </script>
+</body></html>

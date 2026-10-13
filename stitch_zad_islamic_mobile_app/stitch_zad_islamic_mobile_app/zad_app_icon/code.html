@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a2a1f" />
+      <stop offset="50%" stop-color="#134e3a" />
+      <stop offset="100%" stop-color="#071d15" />
+    </linearGradient>
+
+    <!-- Gold Gradients -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5e6b3" />
+      <stop offset="30%" stop-color="#d4af37" />
+      <stop offset="70%" stop-color="#c5a059" />
+      <stop offset="100%" stop-color="#99772c" />
+    </linearGradient>
+
+    <linearGradient id="innerGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.25" />
+    </linearGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#030d0a" flood-opacity="0.6" />
+    </filter>
+
+    <filter id="subtleGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- App Icon Base Squircle (iOS / Android Adaptive style) -->
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#bgGrad)" />
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#innerGlow)" />
+  
+  <!-- Outer Gold Border -->
+  <rect x="18" y="18" width="476" height="476" rx="106" fill="none" stroke="url(#goldGrad)" stroke-width="3" stroke-opacity="0.55" />
+  <rect x="26" y="26" width="460" height="460" rx="98" fill="none" stroke="url(#goldGrad)" stroke-width="1.2" stroke-opacity="0.25" stroke-dasharray="6,4" />
+
+  <!-- Background Islamic Arabesque Subtle Pattern / Ray Light -->
+  <g opacity="0.08" stroke="#ffffff" stroke-width="1.5" fill="none">
+    <circle cx="256" cy="256" r="210" />
+    <circle cx="256" cy="256" r="180" />
+    <circle cx="256" cy="256" r="150" />
+    <line x1="256" y1="46" x2="256" y2="466" />
+    <line x1="46" y1="256" x2="466" y2="256" />
+    <line x1="107" y1="107" x2="405" y2="405" />
+    <line x1="107" y1="405" x2="405" y2="107" />
+  </g>
+
+  <!-- Main Islamic Eight-Pointed Star Medallion (Khatim / Rub El Hizb Motif) -->
+  <!-- Square 1 (Straight) -->
+  <rect x="120" y="120" width="272" height="272" rx="36" fill="#0d3b2b" stroke="url(#goldGrad)" stroke-width="3.5" filter="url(#shadow)" />
+  
+  <!-- Square 2 (Rotated 45deg) -->
+  <rect x="120" y="120" width="272" height="272" rx="36" fill="#114533" fill-opacity="0.8" stroke="url(#goldGrad)" stroke-width="3.5" transform="rotate(45 256 256)" filter="url(#shadow)" />
+
+  <!-- Concentric Layer 2 of Islamic Star Geometry -->
+  <g fill="none" stroke="url(#goldGrad)" stroke-width="2" stroke-opacity="0.85">
+    <polygon points="256,112 298,214 400,256 298,298 256,400 214,298 112,256 214,214" />
+    <polygon points="154,154 256,196 358,154 316,256 358,358 256,316 154,358 196,256" />
+  </g>
+
+  <!-- Inner Sacred Circle & Beads -->
+  <circle cx="256" cy="256" r="116" fill="#0a2a1f" stroke="url(#goldGrad)" stroke-width="3" />
+  <circle cx="256" cy="256" r="108" fill="none" stroke="url(#goldGrad)" stroke-width="1" stroke-opacity="0.4" stroke-dasharray="3,3" />
+
+  <!-- Decorative Corner Jewels / Beads on Star Tips -->
+  <circle cx="256" cy="112" r="5" fill="url(#goldGrad)" />
+  <circle cx="400" cy="256" r="5" fill="url(#goldGrad)" />
+  <circle cx="256" cy="400" r="5" fill="url(#goldGrad)" />
+  <circle cx="112" cy="256" r="5" fill="url(#goldGrad)" />
+  <circle cx="154" cy="154" r="4" fill="url(#goldGrad)" />
+  <circle cx="358" cy="154" r="4" fill="url(#goldGrad)" />
+  <circle cx="358" cy="358" r="4" fill="url(#goldGrad)" />
+  <circle cx="154" cy="358" r="4" fill="url(#goldGrad)" />
+
+  <!-- Central Arabic Typography: "زاد" (Calligraphic Aesthetic) -->
+  <g id="calligraphy" filter="url(#shadow)">
+    <!-- Letter Zay (ز) with dot -->
+    <!-- Custom elegant curved path for Zay -->
+    <path d="M 334 200 C 334 235 328 270 306 298 C 288 322 260 334 225 334 C 205 334 186 328 170 318 C 162 313 165 301 175 301 C 202 301 228 290 248 268 C 266 248 274 225 275 200 C 275 194 285 194 285 200 C 285 212 288 228 295 240 C 304 225 308 206 308 190 C 308 184 334 184 334 200 Z" fill="url(#goldGrad)" />
+
+    <!-- Dot of Zay (نقطة الزاي - ماسية الشكل Diamond) -->
+    <polygon points="320,154 332,166 320,178 308,166" fill="url(#goldGrad)" />
+
+    <!-- Letter Alif (ا) with head/hilya -->
+    <path d="M 246 172 C 243 177 238 180 232 180 L 226 180 L 226 295 C 226 302 216 302 216 295 L 216 165 C 216 156 226 154 234 158 C 240 161 246 166 246 172 Z" fill="url(#goldGrad)" />
+
+    <!-- Letter Dal (د) -->
+    <path d="M 198 228 C 198 218 186 218 184 226 C 180 242 170 262 152 274 C 145 279 140 286 148 290 C 158 295 174 296 195 296 C 204 296 206 288 198 288 C 182 288 174 286 168 282 C 178 274 186 258 192 242 C 196 235 198 230 198 228 Z" fill="url(#goldGrad)" />
+
+    <!-- Tashkeel / Harakat: Fatha (فتحة رشيقة) -->
+    <rect x="306" y="132" width="28" height="6.5" rx="3" transform="rotate(-30 320 135)" fill="url(#goldGrad)" opacity="0.9" />
+
+    <!-- Sukun / Jazm or Subtle Diacritic for balance -->
+    <circle cx="218" cy="144" r="5" fill="none" stroke="url(#goldGrad)" stroke-width="2" opacity="0.85" />
+
+    <!-- Elegant Kashida underline flourish -->
+    <path d="M 180 326 Q 256 338 332 326" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.7" />
+  </g>
+
+  <!-- Subtle Bottom Brand Wordmark English "ZAD" in clean small serif/sans caps -->
+  <text x="256" y="440" font-family="'Cinzel', 'Noto Serif', serif" font-size="19" font-weight="600" letter-spacing="9" fill="url(#goldGrad)" fill-opacity="0.85" text-anchor="middle">Z A D</text>
+
+  <!-- Top Glass Highlight Reflection for App Icon Specular sheen -->
+  <path d="M 24 100 C 24 56 56 24 100 24 L 412 24 C 456 24 488 56 488 100 C 488 120 380 180 256 180 C 132 180 24 120 24 100 Z" fill="#ffffff" fill-opacity="0.05" />
+</svg>

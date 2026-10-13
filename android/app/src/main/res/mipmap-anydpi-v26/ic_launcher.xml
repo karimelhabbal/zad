@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Adaptive launcher icon (Android 8.0 / API 26+).
+
+  The launcher supplies the mask, so only the background and the mark are
+  declared here. Both are derived from the approved artwork
+  (stitch_zad_islamic_mobile_app/minimal_zad_icon/screen.png):
+
+  * background — the design's emerald field gradient (see
+    drawable/ic_launcher_background.xml).
+  * foreground — the gold Khatam mark lifted off that field, sized so it reads
+    at the design's own proportion inside the 72dp visible circle and stays
+    inside the guaranteed 66dp safe zone.
+
+  The artwork's faint hairline frame is intentionally absent from the
+  foreground: it sits at 86% of the layer, where any non-squircle mask would
+  clip it into a broken partial ring. It is still present in the API < 26
+  `ic_launcher.png`, which is never masked.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>

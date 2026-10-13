@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The launch screen is the same brand emerald in both modes, so only the
+         Flutter window background differs at night. Mirrors
+         ZadPalette.darkSurface in lib/core/theme/app_colors.dart. -->
+    <color name="zad_surface">#0B1914</color>
+</resources>

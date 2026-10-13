@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=Noto+Serif:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { colors: { 'inverse-surface': '#30312e', 'outline-variant': '#c0c9c2', 'outline': '#707974', 'secondary': '#7b581d', 'tertiary-fixed-dim': '#a6d0be', 'on-secondary-fixed-variant': '#604105', 'secondary-fixed': '#ffddaf', 'surface-variant': '#e4e2dd', 'surface-container-lowest': '#ffffff', 'error-container': '#ffdad6', 'surface-dim': '#dbdad5', 'surface-container-highest': '#e4e2dd', 'on-error': '#ffffff', 'on-primary-container': '#85bea4', 'surface-container-high': '#eae8e3', 'background': '#fbf9f4', 'on-surface': '#1b1c19', 'primary': '#003626', 'primary-container': '#134e3a', 'on-secondary-fixed': '#281800', 'on-tertiary-fixed': '#002117', 'tertiary-fixed': '#c1ecda', 'primary-fixed-dim': '#99d3b8', 'inverse-primary': '#99d3b8', 'tertiary': '#0b3529', 'surface': '#fbf9f4', 'on-background': '#1b1c19', 'surface-tint': '#316853', 'surface-bright': '#fbf9f4', 'on-error-container': '#93000a', 'on-primary-fixed-variant': '#16503c', 'on-tertiary-container': '#92bbab', 'on-tertiary-fixed-variant': '#274e41', 'on-surface-variant': '#404944', 'error': '#ba1a1a', 'on-primary': '#ffffff', 'on-secondary-container': '#79571c', 'surface-container-low': '#f5f3ee', 'secondary-container': '#ffd089', 'secondary-fixed-dim': '#edbf7a', 'primary-fixed': '#b5efd3', 'on-primary-fixed': '#002115', 'on-secondary': '#ffffff', 'on-tertiary': '#ffffff', 'inverse-on-surface': '#f2f1ec', 'surface-container': '#f0eee9', 'tertiary-container': '#254c3f' }, borderRadius: { 'DEFAULT': '0.25rem', 'lg': '0.5rem', 'xl': '0.75rem', 'full': '9999px' }, spacing: { 'space-sm': '0.5rem', 'space-xl': '2.25rem', 'margin': '1.25rem', 'space-lg': '1.5rem', 'space-md': '1rem', 'space-xs': '0.25rem', 'gutter': '1rem' }, fontFamily: { 'headline-md': ['Noto Serif'], 'headline-sm': ['Noto Serif'], 'label-md': ['IBM Plex Sans'], 'label-sm': ['IBM Plex Sans'], 'body-lg': ['IBM Plex Sans'], 'headline-lg': ['Noto Serif'], 'body-sm': ['IBM Plex Sans'], 'label-lg': ['IBM Plex Sans'], 'headline-lg-mobile': ['Noto Serif'], 'body-md': ['IBM Plex Sans'] }, fontSize: { 'headline-md': ['22px', { lineHeight: '34px', fontWeight: '600' }], 'headline-sm': ['18px', { lineHeight: '28px', fontWeight: '600' }], 'label-md': ['12px', { lineHeight: '16px', fontWeight: '500' }], 'label-sm': ['10px', { lineHeight: '14px', fontWeight: '500' }], 'body-lg': ['18px', { lineHeight: '30px', fontWeight: '400' }], 'headline-lg': ['32px', { lineHeight: '48px', fontWeight: '600' }], 'body-sm': ['13px', { lineHeight: '20px', fontWeight: '400' }], 'label-lg': ['14px', { lineHeight: '20px', letterSpacing: '0.01em', fontWeight: '500' }], 'headline-lg-mobile': ['26px', { lineHeight: '38px', fontWeight: '600' }], 'body-md': ['15px', { lineHeight: '24px', fontWeight: '400' }] } } } };</script><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head><body class="bg-surface font-body-md text-on-surface flex flex-col min-h-screen selection:bg-secondary-fixed selection:text-on-secondary-fixed"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-margin flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm min-w-0"><div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-primary text-[22px]">mosque</span></div><div class="flex flex-col min-w-0"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm text-primary leading-none">زاد</span><span class="text-outline text-label-sm font-label-sm">•</span><span class="font-label-md text-label-md text-on-surface truncate">Al Raisiya</span></div><span class="font-label-sm text-label-sm text-secondary truncate">١٤ رمضان ١٤٤٦ هـ</span></div></div><div class="flex items-center gap-space-xs shrink-0"><button class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[22px]">search</span></button><button class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition-colors relative"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-2.5 start-2.5 w-2 h-2 rounded-full bg-secondary"></span></button><img alt="Profile" class="w-8 h-8 rounded-full object-cover shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBC8rJ5DU_Yv1znxxdoGLKRlHsVEZOuQcRvGerChQXi_caNHS6grNFKMfA6dTDokImLenlYRvH5-ktm9MRMHegL1_URaqG_ldg0GeNNuc5Nis3sk1Y4zvb5gUTK_5Il0QOsqVuSvbo0nQUYDiBwS77PKlzyeqJIXuJJKrW6-aQvR0p__dPpSzZhuKDbLZOg9i2Y0HU-r06dNz53wrtKqd2lD3-jQjN8o9GDLnpzP0ETAr-pwR679eCWbw"/></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface"><div class="flex flex-col w-full pb-8 select-none">
+<!-- Screen Header & Haptic/Sound Controls -->
+<div class="px-margin pt-4 pb-2 flex items-center justify-between">
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs">
+<h1 class="font-headline-sm text-headline-sm text-primary">السبحة الذكية</h1>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-label-sm text-label-sm mt-0.5">
+<span class="material-symbols-outlined text-[15px] text-secondary">flare</span>
+<span>إجمالي تسبيحات اليوم:</span>
+<span class="font-semibold text-primary font-label-md text-label-md" id="daily-total">٨٥٠</span>
+</div>
+</div>
+<!-- Micro Preferences (Haptic & Tone toggles) -->
+<div class="flex items-center gap-1.5 bg-surface-container-high rounded-full p-1 shadow-sm">
+<button aria-label="تبديل الاهتزاز" class="w-9 h-9 rounded-full flex items-center justify-center transition-all bg-surface-container-lowest text-primary shadow-sm" id="toggle-haptic" type="button">
+<span class="material-symbols-outlined text-[19px]">vibration</span>
+</button>
+<button aria-label="تبديل النغمة الهادئة" class="w-9 h-9 rounded-full flex items-center justify-center transition-all text-on-surface-variant hover:text-on-surface" id="toggle-sound" type="button">
+<span class="material-symbols-outlined text-[19px]">volume_up</span>
+</button>
+</div>
+</div>
+<!-- Active Dhikr Display & Card -->
+<div class="px-margin my-3">
+<div class="relative overflow-hidden bg-surface-container-lowest rounded-xl p-space-md shadow-[0_4px_20px_rgba(15,56,44,0.05)]">
+<!-- Subtle Islamic Geometry Silhouette in background corner -->
+<div class="absolute -top-6 -left-6 w-24 h-24 opacity-[0.06] text-primary pointer-events-none">
+<svg class="w-full h-full" fill="currentColor" viewbox="0 0 100 100">
+<polygon points="50,0 64,14 85,14 85,35 100,50 85,64 85,85 64,85 50,100 35,85 14,85 14,64 0,50 14,35 14,14 35,14"></polygon>
+</svg>
+</div>
+<div class="flex items-start justify-between gap-space-sm mb-2 relative z-10">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-secondary-container"></span>
+<span class="font-label-sm text-label-sm text-secondary font-medium tracking-wide">الذِّكْرُ الحَالِي المُنْتَقَى</span>
+</div>
+<button class="flex items-center gap-1 text-primary hover:text-primary-container font-label-sm text-label-sm transition-colors py-0.5 px-2 rounded-full bg-primary-fixed/40" id="open-custom-modal" type="button">
+<span class="material-symbols-outlined text-[15px]">add_circle</span>
+<span>ذكر مخصص</span>
+</button>
+</div>
+<div class="relative z-10 py-1">
+<p class="font-headline-sm text-headline-sm text-primary leading-relaxed text-center font-bold tracking-tight" id="active-dhikr-text">
+          سُبْحَانَ اللَّهِ وَبِحَمْدِهِ ، سُبْحَانَ اللَّهِ الْعَظِيمِ
+        </p>
+</div>
+<!-- Quick Selector Pills (Horizontal Scroll) -->
+<div class="relative z-10 mt-3 pt-2">
+<div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 text-nowrap">
+<button class="dhikr-pill active-pill px-3 py-1.5 rounded-full font-label-md text-label-md transition-all bg-primary-container text-on-primary" data-dhikr="سُبْحَانَ اللَّهِ وَبِحَمْدِهِ ، سُبْحَانَ اللَّهِ الْعَظِيمِ" data-hadith="«كَلِمَتَانِ خَفِيفَتَانِ عَلَى اللِّسَانِ، ثَقِيلَتَانِ فِي الْمِيزَانِ، حَبِيبَتَانِ إِلَى الرَّحْمَنِ»" data-target="33">
+            سبحان الله وبحمده
+          </button>
+<button class="dhikr-pill px-3 py-1.5 rounded-full font-label-md text-label-md transition-all bg-surface-container-high text-on-surface-variant hover:text-on-surface" data-dhikr="سُبْحَانَ اللَّهِ" data-hadith="«مَنْ قَالَ سُبْحَانَ اللَّهِ مِائَةَ مَرَّةٍ حُطَّتْ عَنْهُ خَطَايَاهُ وَإِنْ كَانَتْ مِثْلَ زَبَدِ الْبَحْرِ»" data-target="33">
+            سبحان الله
+          </button>
+<button class="dhikr-pill px-3 py-1.5 rounded-full font-label-md text-label-md transition-all bg-surface-container-high text-on-surface-variant hover:text-on-surface" data-dhikr="الْحَمْدُ لِلَّهِ" data-hadith="«وَالْحَمْدُ لِلَّهِ تَمْلأُ الْمِيزَانَ، وَسُبْحَانَ اللَّهِ وَالْحَمْدُ لِلَّهِ تَمْلآنِ مَا بَيْنَ السَّمَاوَاتِ وَالأَرْضِ»" data-target="33">
+            الحمد لله
+          </button>
+<button class="dhikr-pill px-3 py-1.5 rounded-full font-label-md text-label-md transition-all bg-surface-container-high text-on-surface-variant hover:text-on-surface" data-dhikr="لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ" data-hadith="«أَفْضَلُ الذِّكْرِ لَا إِلَهَ إِلَّا اللَّهُ، وَأَفْضَلُ الدُّعَاءِ الْحَمْدُ لِلَّهِ»" data-target="100">
+            لا إله إلا الله
+          </button>
+<button class="dhikr-pill px-3 py-1.5 rounded-full font-label-md text-label-md transition-all bg-surface-container-high text-on-surface-variant hover:text-on-surface" data-dhikr="اللَّهُ أَكْبَرُ كَبِيرًا وَالْحَمْدُ لِلَّهِ كَثِيرًا" data-hadith="«عَجِبْتُ لَهَا، فُتِحَتْ لَهَا أَبْوَابُ السَّمَاءِ»" data-target="33">
+            الله أكبر
+          </button>
+<button class="dhikr-pill px-3 py-1.5 rounded-full font-label-md text-label-md transition-all bg-surface-container-high text-on-surface-variant hover:text-on-surface" data-dhikr="أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ وَأَتُوبُ إِلَيْهِ" data-hadith="«مَنْ لَزِمَ الِاسْتِغْفَارَ جَعَلَ اللَّهُ لَهُ مِنْ كُلِّ ضِيقٍ مَخْرَجًا وَمِنْ كُلِّ هَمٍّ فَرَجًا»" data-target="100">
+            أستغفر الله
+          </button>
+<button class="dhikr-pill px-3 py-1.5 rounded-full font-label-md text-label-md transition-all bg-surface-container-high text-on-surface-variant hover:text-on-surface" data-dhikr="اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ" data-hadith="«مَنْ صَلَّى عَلَيَّ صَلَاةً صَلَّى اللَّهُ عَلَيْهِ بِهَا عَشْرًا»" data-target="10">
+            الصلاة على النبي ﷺ
+          </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Primary Interactive Dial Canvas & Tasbih Touch Target -->
+<div class="px-margin flex flex-col items-center justify-center my-2">
+<!-- Dial Outer Container -->
+<div class="relative flex items-center justify-center">
+<!-- Glow Ripple on tap -->
+<div class="absolute w-72 h-72 rounded-full pointer-events-none scale-90 opacity-0 transition-all duration-300 bg-secondary-fixed/40" id="tap-ripple"></div>
+<!-- Massive Circular Ergonomic Hit Surface -->
+<button aria-label="اضغط للتسبيح" class="relative w-64 h-64 sm:w-72 sm:h-72 rounded-full bg-surface-container-lowest shadow-[0_8px_30px_rgba(15,56,44,0.08)] flex flex-col items-center justify-center active:scale-[0.97] transition-transform duration-100 outline-none" id="tasbih-touch-area" type="button">
+<!-- SVG Progress Indicator Ring -->
+<svg class="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewbox="0 0 240 240">
+<!-- Background track -->
+<circle cx="120" cy="120" fill="none" r="104" stroke="#E4E2DD" stroke-width="8"></circle>
+<!-- Active Progress Stroke -->
+<circle class="transition-[stroke-dashoffset] duration-200" cx="120" cy="120" fill="none" id="progress-circle" r="104" stroke="#134E3A" stroke-dasharray="653.45" stroke-dashoffset="198" stroke-linecap="round" stroke-width="8"></circle>
+<!-- Secondary Gold Decorative Accent Ring -->
+<circle cx="120" cy="120" fill="none" opacity="0.6" r="95" stroke="#C99E5C" stroke-dasharray="3 6" stroke-width="1.5"></circle>
+</svg>
+<!-- Inner Dial Information -->
+<div class="relative z-10 flex flex-col items-center justify-center pointer-events-none">
+<!-- Cycle Badge -->
+<div class="flex items-center gap-1 mb-1 px-2.5 py-0.5 rounded-full bg-surface-container-high text-secondary">
+<span class="material-symbols-outlined text-[13px]">published_with_changes</span>
+<span class="font-label-sm text-label-sm font-semibold" id="cycle-label">الدورة ١</span>
+</div>
+<!-- Counter Large Value -->
+<div class="relative my-0.5">
+<span class="font-headline-lg-mobile text-[58px] leading-tight font-bold text-primary tracking-tight" id="counter-value-arabic">
+              ٢٣
+            </span>
+</div>
+<!-- Target & Status Details -->
+<div class="flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md mt-1">
+<span class="text-outline">الهدف:</span>
+<span class="font-semibold text-secondary" id="target-value-arabic">٣٣</span>
+</div>
+<!-- Subtle Guidance Prompt -->
+<span class="font-label-sm text-label-sm text-outline mt-2 tracking-wide flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-secondary">touch_app</span>
+            المس في أي مكان للعد
+          </span>
+</div>
+</button>
+<!-- Absolute Secondary Quick Control Buttons Surrounding Dial -->
+<!-- Reset Counter Button -->
+<button aria-label="تصفير العداد" class="absolute -bottom-2 -right-1 w-12 h-12 rounded-full bg-surface-container-lowest text-on-surface-variant hover:text-error shadow-[0_4px_16px_rgba(0,0,0,0.08)] flex items-center justify-center active:scale-90 transition-all z-20" id="btn-reset" type="button">
+<span class="material-symbols-outlined text-[22px]">restart_alt</span>
+</button>
+<!-- Full Cycle Notification Star Indicator -->
+<div class="absolute -top-1 -left-1 w-11 h-11 rounded-full bg-secondary-container text-on-secondary-container shadow-md flex items-center justify-center scale-0 transition-transform duration-300 z-20" id="target-complete-badge">
+<span class="material-symbols-outlined text-[20px]">verified</span>
+</div>
+</div>
+<!-- Target Selector Pills -->
+<div class="w-full flex items-center justify-between gap-2 mt-6 max-w-xs">
+<button class="target-chip flex-1 py-1.5 rounded-full font-label-md text-label-md text-center transition-all bg-primary-container text-on-primary" data-set-target="33">
+        ٣٣
+      </button>
+<button class="target-chip flex-1 py-1.5 rounded-full font-label-md text-label-md text-center transition-all bg-surface-container-high text-on-surface-variant hover:text-on-surface" data-set-target="100">
+        ١٠٠
+      </button>
+<button class="target-chip flex-1 py-1.5 rounded-full font-label-md text-label-md text-center transition-all bg-surface-container-high text-on-surface-variant hover:text-on-surface" data-set-target="1000">
+        ١٠٠٠
+      </button>
+<button class="target-chip flex-1 py-1.5 rounded-full font-label-md text-label-md text-center transition-all bg-surface-container-high text-on-surface-variant hover:text-on-surface" data-set-target="Infinity">
+        حر ∞
+      </button>
+</div>
+</div>
+<!-- Deeper Devotional Insight & Hadith Card -->
+<div class="px-margin mt-4">
+<div class="bg-surface-container-low rounded-xl p-space-md shadow-sm">
+<div class="flex items-center gap-space-xs text-secondary mb-2">
+<span class="material-symbols-outlined text-[18px]">menu_book</span>
+<span class="font-label-sm text-label-sm font-semibold tracking-wide">فضل الذكر المأثور</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface leading-relaxed italic" id="dhikr-hadith-text">
+        «كَلِمَتَانِ خَفِيفَتَانِ عَلَى اللِّسَانِ، ثَقِيلَتَانِ فِي الْمِيزَانِ، حَبِيبَتَانِ إِلَى الرَّحْمَنِ: سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ»
+      </p>
+<div class="flex items-center justify-between mt-3 pt-2 text-outline font-label-sm text-label-sm">
+<span>متفق عليه • صحيح البخاري</span>
+<button class="flex items-center gap-1 text-primary hover:text-primary-container transition-colors" id="btn-share-hadith" type="button">
+<span class="material-symbols-outlined text-[16px]">share</span>
+<span>مشاركة الأجر</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Daily Statistics Summary Grid -->
+<div class="px-margin mt-4">
+<div class="grid grid-cols-2 gap-space-sm">
+<!-- Session Card -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-fixed/50 flex items-center justify-center shrink-0 text-primary">
+<span class="material-symbols-outlined text-[20px]">history_edu</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-outline truncate">جلسة اليوم</span>
+<span class="font-label-lg text-label-lg font-semibold text-primary truncate" id="session-count">٢٣ تسبيحة</span>
+</div>
+</div>
+<!-- Streaks / Consistency Card -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-secondary-fixed/50 flex items-center justify-center shrink-0 text-secondary">
+<span class="material-symbols-outlined text-[20px]">military_tech</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-outline truncate">الاستمرار التعبدي</span>
+<span class="font-label-lg text-label-lg font-semibold text-primary truncate">١٤ يوماً متواصلاً</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Custom Dhikr Carousel Section -->
+<div class="mt-6">
+<div class="px-margin flex items-center justify-between mb-3">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[20px]">bookmark_heart</span>
+<h2 class="font-headline-sm text-headline-sm text-primary">أذكاري الخاصة</h2>
+</div>
+<button class="font-label-sm text-label-sm text-secondary hover:underline" id="btn-manage-adhkar" type="button">
+        إدارة الأذكار
+      </button>
+</div>
+<!-- Horizontal Scrollable Custom Dhikr Items -->
+<div class="px-margin flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
+<!-- Card 1 -->
+<div class="w-60 shrink-0 bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="font-label-sm text-label-sm text-secondary bg-secondary-fixed/30 px-2 py-0.5 rounded-full">ورد الصباح</span>
+<span class="font-label-sm text-label-sm text-outline">الهدف: ١٠٠</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface font-medium line-clamp-2">
+            «حَسْبِيَ اللَّهُ لَا إِلَهَ إِلَّا هُوَ عَلَيْهِ تَوَكَّلْتُ»
+          </p>
+</div>
+<div class="flex items-center justify-between mt-3 pt-2">
+<span class="font-label-sm text-label-sm text-outline">أُنجز: ٧٠٪</span>
+<button class="text-primary hover:text-primary-container font-label-sm text-label-sm font-semibold flex items-center gap-0.5" data-select-custom="«حَسْبِيَ اللَّهُ لَا إِلَهَ إِلَّا هُوَ عَلَيْهِ تَوَكَّلْتُ وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ»" data-target="100">
+<span>تفعيل</span>
+<span class="material-symbols-outlined text-[16px]">arrow_back</span>
+</button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="w-60 shrink-0 bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="font-label-sm text-label-sm text-primary bg-primary-fixed/40 px-2 py-0.5 rounded-full">تفريج الكرب</span>
+<span class="font-label-sm text-label-sm text-outline">الهدف: ٤٠</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface font-medium line-clamp-2">
+            «لَا إِلَهَ إِلَّا أَنْتَ سُبْحَانَكَ إِنِّي كُنْتُ مِنَ الظَّالِمِينَ»
+          </p>
+</div>
+<div class="flex items-center justify-between mt-3 pt-2">
+<span class="font-label-sm text-label-sm text-outline">أُنجز: ٤٠٪</span>
+<button class="text-primary hover:text-primary-container font-label-sm text-label-sm font-semibold flex items-center gap-0.5" data-select-custom="«لَا إِلَهَ إِلَّا أَنْتَ سُبْحَانَكَ إِنِّي كُنْتُ مِنَ الظَّالِمِينَ»" data-target="40">
+<span>تفعيل</span>
+<span class="material-symbols-outlined text-[16px]">arrow_back</span>
+</button>
+</div>
+</div>
+<!-- Add New Custom Dhikr Quick Box -->
+<div class="w-40 shrink-0 bg-surface-container-high rounded-xl p-space-md flex flex-col items-center justify-center text-center cursor-pointer hover:bg-surface-variant transition-colors" id="trigger-create-card">
+<div class="w-10 h-10 rounded-full bg-surface-container-lowest text-primary flex items-center justify-center mb-2 shadow-sm">
+<span class="material-symbols-outlined text-[22px]">add</span>
+</div>
+<span class="font-label-md text-label-md text-primary font-medium">إضافة وِرد جديد</span>
+<span class="font-label-sm text-label-sm text-outline mt-0.5">تحديد الهدف والذكر</span>
+</div>
+</div>
+</div>
+<!-- Modal: Add / Custom Dhikr Dialog (Hidden by Default) -->
+<div class="fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm flex items-end justify-center opacity-0 pointer-events-none transition-opacity duration-200" id="custom-modal-backdrop">
+<div class="w-full max-w-lg bg-surface-container-lowest rounded-t-xl p-margin shadow-2xl transform translate-y-full transition-transform duration-300" id="custom-modal-sheet">
+<div class="w-12 h-1.5 bg-surface-variant rounded-full mx-auto mb-4"></div>
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-headline-sm text-headline-sm text-primary">إضافة ذِكْر مخصص</h3>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface" id="close-modal-btn" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="space-y-4">
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">نص الذكر الشريف</label>
+<input class="w-full px-space-md py-3 bg-surface-container-low rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:bg-surface-container-lowest transition-all" id="modal-dhikr-input" placeholder="مثال: يَا حَيُّ يَا قَيُّومُ بِرَحْمَتِكَ أَسْتَغِيثُ" type="text"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">الهدف العددي المطلوب</label>
+<div class="flex items-center gap-2">
+<button class="modal-target-btn flex-1 py-2 rounded-lg bg-surface-container-high text-on-surface font-label-md text-label-md" data-modal-target="33" type="button">٣٣</button>
+<button class="modal-target-btn flex-1 py-2 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md" data-modal-target="100" type="button">١٠٠</button>
+<button class="modal-target-btn flex-1 py-2 rounded-lg bg-surface-container-high text-on-surface font-label-md text-label-md" data-modal-target="1000" type="button">١٠٠٠</button>
+<input class="w-24 px-2 py-2 bg-surface-container-low rounded-lg text-center font-label-md text-label-md focus:outline-none" id="modal-custom-number" placeholder="رقم مخصص" type="number"/>
+</div>
+</div>
+<div class="pt-2">
+<button class="w-full h-[52px] bg-primary text-on-primary rounded-lg font-label-lg text-label-lg font-medium flex items-center justify-center gap-2 shadow-md hover:bg-primary-container transition-colors" id="modal-save-btn" type="button">
+<span class="material-symbols-outlined text-[20px]">check</span>
+<span>حفظ والبدء بالتسبيح الآن</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Toast / Subtle Feedback Strip -->
+<div class="fixed bottom-24 inset-x-margin max-w-sm mx-auto z-40 bg-inverse-surface text-inverse-on-surface px-4 py-2.5 rounded-full shadow-lg flex items-center justify-between opacity-0 pointer-events-none transition-all duration-300" id="tasbih-toast">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary-fixed text-[20px]">done_all</span>
+<span class="font-label-md text-label-md" id="toast-message">اكتمل الورد المبارك، تقبل الله منكم!</span>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    // State
+    let count = 23;
+    let target = 33;
+    let cycles = 1;
+    let dailyTotal = 850;
+    let hapticEnabled = true;
+    let soundEnabled = true;
+
+    // Convert digits to Arabic-Indic digits
+    function toArabicDigits(num) {
+      if (num === Infinity || num === 'Infinity') return '∞';
+      return String(num).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+    }
+
+    // Audio tone simulation using Web Audio API
+    let audioCtx = null;
+    function playChime() {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(640, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.22);
+      } catch (e) {
+        // AudioContext fallback
+      }
+    }
+
+    function triggerHaptic(duration = 25) {
+      if (!hapticEnabled) return;
+      if (navigator.vibrate) {
+        navigator.vibrate(duration);
+      }
+    }
+
+    // Elements
+    const counterEl = document.getElementById('counter-value-arabic');
+    const targetEl = document.getElementById('target-value-arabic');
+    const cycleLabelEl = document.getElementById('cycle-label');
+    const progressCircle = document.getElementById('progress-circle');
+    const dailyTotalEl = document.getElementById('daily-total');
+    const sessionCountEl = document.getElementById('session-count');
+    const touchArea = document.getElementById('tasbih-touch-area');
+    const tapRipple = document.getElementById('tap-ripple');
+    const completeBadge = document.getElementById('target-complete-badge');
+    const resetBtn = document.getElementById('btn-reset');
+    const activeDhikrText = document.getElementById('active-dhikr-text');
+    const dhikrHadithText = document.getElementById('dhikr-hadith-text');
+    const toast = document.getElementById('tasbih-toast');
+    const toastMessage = document.getElementById('toast-message');
+
+    const toggleHaptic = document.getElementById('toggle-haptic');
+    const toggleSound = document.getElementById('toggle-sound');
+
+    // Modal elements
+    const customModalBackdrop = document.getElementById('custom-modal-backdrop');
+    const customModalSheet = document.getElementById('custom-modal-sheet');
+    const openCustomModalBtn = document.getElementById('open-custom-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const modalSaveBtn = document.getElementById('modal-save-btn');
+    const triggerCreateCard = document.getElementById('trigger-create-card');
+    const modalDhikrInput = document.getElementById('modal-dhikr-input');
+
+    const radius = 104;
+    const circumference = 2 * Math.PI * radius; // ~653.45
+
+    function updateProgressUI() {
+      counterEl.textContent = toArabicDigits(count);
+      targetEl.textContent = toArabicDigits(target);
+      cycleLabelEl.textContent = 'الدورة ' + toArabicDigits(cycles);
+      dailyTotalEl.textContent = toArabicDigits(dailyTotal);
+      sessionCountEl.textContent = toArabicDigits(count) + ' تسبيحة';
+
+      if (target === Infinity || target === 'Infinity') {
+        progressCircle.style.strokeDashoffset = '0';
+        return;
+      }
+
+      const ratio = Math.min(count / target, 1);
+      const offset = circumference - (ratio * circumference);
+      progressCircle.style.strokeDashoffset = offset;
+
+      // Completion badge
+      if (count >= target && target !== Infinity) {
+        completeBadge.classList.remove('scale-0');
+        completeBadge.classList.add('scale-100');
+      } else {
+        completeBadge.classList.remove('scale-100');
+        completeBadge.classList.add('scale-0');
+      }
+    }
+
+    function showToast(msg) {
+      toastMessage.textContent = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2500);
+    }
+
+    function handleIncrement() {
+      count++;
+      dailyTotal++;
+      
+      triggerHaptic(20);
+      playChime();
+
+      // Tap visual ripple
+      tapRipple.classList.remove('opacity-0', 'scale-90');
+      tapRipple.classList.add('opacity-40', 'scale-105');
+      setTimeout(() => {
+        tapRipple.classList.remove('opacity-40', 'scale-105');
+        tapRipple.classList.add('opacity-0', 'scale-90');
+      }, 220);
+
+      // Check Cycle
+      if (target !== Infinity && count >= target) {
+        triggerHaptic([40, 50, 60]);
+        showToast('ما شاء الله! اكتملت الدورة (' + toArabicDigits(cycles) + ')');
+        setTimeout(() => {
+          cycles++;
+          count = 0;
+          updateProgressUI();
+        }, 350);
+      } else {
+        updateProgressUI();
+      }
+    }
+
+    touchArea.addEventListener('click', handleIncrement);
+
+    // Reset Counter
+    resetBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      count = 0;
+      triggerHaptic(40);
+      updateProgressUI();
+      showToast('تمت إعادة ضبط العداد');
+    });
+
+    // Target Selection Chips
+    document.querySelectorAll('.target-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = btn.getAttribute('data-set-target');
+        target = val === 'Infinity' ? Infinity : parseInt(val, 10);
+        count = 0;
+        
+        document.querySelectorAll('.target-chip').forEach(c => {
+          c.classList.remove('bg-primary-container', 'text-on-primary');
+          c.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+        });
+        btn.classList.add('bg-primary-container', 'text-on-primary');
+        btn.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+        
+        triggerHaptic(15);
+        updateProgressUI();
+      });
+    });
+
+    // Dhikr Preset Pills
+    document.querySelectorAll('.dhikr-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        const text = pill.getAttribute('data-dhikr');
+        const tg = pill.getAttribute('data-target');
+        const hd = pill.getAttribute('data-hadith');
+
+        activeDhikrText.textContent = text;
+        dhikrHadithText.textContent = hd;
+
+        if (tg) {
+          target = tg === 'Infinity' ? Infinity : parseInt(tg, 10);
+          count = 0;
+        }
+
+        document.querySelectorAll('.dhikr-pill').forEach(p => {
+          p.classList.remove('bg-primary-container', 'text-on-primary');
+          p.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+        });
+        pill.classList.add('bg-primary-container', 'text-on-primary');
+        pill.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+
+        // Sync Target Chips if matching
+        document.querySelectorAll('.target-chip').forEach(c => {
+          if (c.getAttribute('data-set-target') === String(tg)) {
+            c.classList.add('bg-primary-container', 'text-on-primary');
+            c.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+          } else {
+            c.classList.remove('bg-primary-container', 'text-on-primary');
+            c.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+          }
+        });
+
+        triggerHaptic(20);
+        updateProgressUI();
+      });
+    });
+
+    // Custom Cards Activation
+    document.querySelectorAll('[data-select-custom]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const text = btn.getAttribute('data-select-custom');
+        const tg = parseInt(btn.getAttribute('data-target'), 10);
+        activeDhikrText.textContent = text;
+        target = tg;
+        count = 0;
+        triggerHaptic(25);
+        updateProgressUI();
+        showToast('تم تفعيل الورد المخصص');
+      });
+    });
+
+    // Toggle Haptic
+    toggleHaptic.addEventListener('click', () => {
+      hapticEnabled = !hapticEnabled;
+      if (hapticEnabled) {
+        toggleHaptic.classList.add('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+        toggleHaptic.classList.remove('text-outline');
+        triggerHaptic(30);
+      } else {
+        toggleHaptic.classList.remove('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+        toggleHaptic.classList.add('text-outline');
+      }
+    });
+
+    // Toggle Sound
+    toggleSound.addEventListener('click', () => {
+      soundEnabled = !soundEnabled;
+      if (soundEnabled) {
+        toggleSound.classList.add('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+        toggleSound.classList.remove('text-outline');
+        playChime();
+      } else {
+        toggleSound.classList.remove('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+        toggleSound.classList.add('text-outline');
+      }
+    });
+
+    // Modal Control
+    function openModal() {
+      customModalBackdrop.classList.remove('opacity-0', 'pointer-events-none');
+      customModalSheet.classList.remove('translate-y-full');
+      modalDhikrInput.focus();
+    }
+
+    function closeModal() {
+      customModalSheet.classList.add('translate-y-full');
+      customModalBackdrop.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    openCustomModalBtn.addEventListener('click', openModal);
+    if (triggerCreateCard) triggerCreateCard.addEventListener('click', openModal);
+    closeModalBtn.addEventListener('click', closeModal);
+    customModalBackdrop.addEventListener('click', (e) => {
+      if (e.target === customModalBackdrop) closeModal();
+    });
+
+    // Save Custom Dhikr
+    let chosenModalTarget = 100;
+    document.querySelectorAll('.modal-target-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        chosenModalTarget = parseInt(btn.getAttribute('data-modal-target'), 10);
+        document.querySelectorAll('.modal-target-btn').forEach(b => {
+          b.classList.remove('bg-primary-container', 'text-on-primary');
+          b.classList.add('bg-surface-container-high', 'text-on-surface');
+        });
+        btn.classList.add('bg-primary-container', 'text-on-primary');
+        btn.classList.remove('bg-surface-container-high', 'text-on-surface');
+      });
+    });
+
+    modalSaveBtn.addEventListener('click', () => {
+      const customTxt = modalDhikrInput.value.trim();
+      const customNum = document.getElementById('modal-custom-number').value;
+      if (customNum && parseInt(customNum, 10) > 0) {
+        chosenModalTarget = parseInt(customNum, 10);
+      }
+      if (customTxt.length > 0) {
+        activeDhikrText.textContent = customTxt;
+        target = chosenModalTarget;
+        count = 0;
+        updateProgressUI();
+        closeModal();
+        modalDhikrInput.value = '';
+        showToast('تمت إضافة الورد وبدء التسبيح');
+      } else {
+        modalDhikrInput.focus();
+      }
+    });
+
+    // Initial setup
+    updateProgressUI();
+  })();
+</script></main><nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(15,56,44,0.05)]" data-active-classes="text-primary-container font-semibold [&amp;_span.indicator]:opacity-100"><div class="flex justify-around items-center h-20 px-space-xs"><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-14 text-on-surface-variant transition-colors group relative" data-path="al-raisiya" href="#"><span class="material-symbols-outlined text-[24px]">cottage</span><span class="font-label-sm text-label-sm">الرئيسية</span><span class="indicator opacity-0 w-1.5 h-1.5 rounded-full bg-secondary-container mt-0.5 transition-opacity"></span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-14 text-on-surface-variant transition-colors group relative" data-path="al-quran" href="#"><span class="material-symbols-outlined text-[24px]">menu_book</span><span class="font-label-sm text-label-sm">القرآن</span><span class="indicator opacity-0 w-1.5 h-1.5 rounded-full bg-secondary-container mt-0.5 transition-opacity"></span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-14 text-on-surface-variant transition-colors group relative" data-path="al-azkar" href="#"><span class="material-symbols-outlined text-[24px]">auto_stories</span><span class="font-label-sm text-label-sm">الأذكار</span><span class="indicator opacity-0 w-1.5 h-1.5 rounded-full bg-secondary-container mt-0.5 transition-opacity"></span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-14 text-on-surface-variant transition-colors group relative" data-path="al-subha" href="#"><span class="material-symbols-outlined text-[24px]">counter_5</span><span class="font-label-sm text-label-sm">السبحة</span><span class="indicator opacity-0 w-1.5 h-1.5 rounded-full bg-secondary-container mt-0.5 transition-opacity"></span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-14 text-on-surface-variant transition-colors group relative" data-path="al-mazid" href="#"><span class="material-symbols-outlined text-[24px]">widgets</span><span class="font-label-sm text-label-sm">المزيد</span><span class="indicator opacity-0 w-1.5 h-1.5 rounded-full bg-secondary-container mt-0.5 transition-opacity"></span></a></div></nav></body></html>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Native launch screen, shown from process start until Flutter draws its first
+  frame.
+
+  This replaces the Flutter template's plain white / `?android:colorBackground`
+  placeholder with the Zad brand: the emerald field plus the gold Khatam
+  wordmark, so startup never shows an unbranded blank screen.
+
+  There is deliberately no `drawable-v21/` variant — the project's minSdk is 24
+  (Flutter's default), so a single `drawable/` resource covers every supported
+  device and there is only one definition to keep in sync.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/splash_background" />
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/splash_logo" />
+    </item>
+</layer-list>

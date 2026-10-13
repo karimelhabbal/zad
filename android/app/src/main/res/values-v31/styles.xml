@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Android 12+ (API 31) replaces the window background with the platform
+      splash screen, so the brand has to be declared through the
+      `windowSplashScreen*` attributes as well. Without this the OS would show
+      its own default splash (app icon on `windowBackground`) instead of the Zad
+      emerald field.
+
+      A `values-night-v31` twin exists because the `night` qualifier outranks
+      `version` during resource resolution: without it, a device in dark mode on
+      Android 12+ would fall back to `values-night/styles.xml` and lose these
+      attributes entirely.
+    -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowSplashScreenBackground">@color/zad_splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@color/zad_surface</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+</resources>
