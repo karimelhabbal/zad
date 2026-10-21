@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart' as ap;
 // `flutter_test` does not re-export the lifecycle enum, and the `lifecycle`
@@ -6,6 +7,7 @@ import 'package:audioplayers/audioplayers.dart' as ap;
 import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zad/data/models/reciter.dart';
+import 'package:zad/data/repositories/recitation_cache.dart';
 import 'package:zad/state/audio_controller.dart';
 
 /// [AudioController]'s state machine, driven through a fake platform player so
@@ -698,6 +700,137 @@ void main() {
       expect(player.disposeCount, 1);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // The download fallback.
+  //
+  // `audioplayers` on Windows hands a remote URL to Media Foundation's
+  // `IMFSourceResolver`, which resolves it through WinINet and fails with
+  // `ERROR_INTERNET_NAME_NOT_RESOLVED` (0x80072EE7) even though the CDN is
+  // reachable and an ordinary HTTP request from Dart succeeds. The controller
+  // must then fetch the file itself and play it from disk, instead of leaving
+  // the user with a play button that does nothing.
+  // -------------------------------------------------------------------------
+  group('download fallback', () {
+    const streamUrl =
+        'https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/1.mp3';
+
+    late _FakeCache cache;
+
+    setUp(() {
+      cache = _FakeCache();
+      controller.dispose();
+      controller = AudioController(
+        playerFactory: () => player,
+        probe: (_) async => AudioProbe.ok,
+        cache: cache,
+      );
+    });
+
+    Future<void> playFatiha() => controller.playSurah(
+      surahNumber: 1,
+      surahLabel: 'الفاتحة',
+      reciter: reciter,
+    );
+
+    test('plays a local file when the platform refuses the remote URL',
+        () async {
+      player.failRemoteWith = Exception(
+        'Failed to set source (WindowsAudioError 0x80072EE7)',
+      );
+
+      await playFatiha();
+
+      expect(player.playedUrls, <String>[streamUrl],
+          reason: 'the stream is attempted first');
+      expect(cache.fetched, <String>[streamUrl],
+          reason: 'the bytes are fetched by Dart, not by the media stack');
+      expect(player.playedFiles, <String>[_FakeCache.downloadedPath]);
+      expect(controller.status, RecitationStatus.playing);
+      expect(controller.hasError, isFalse);
+      expect(controller.downloadProgress, isNull,
+          reason: 'the progress flag is cleared once playback starts');
+    });
+
+    test('an already-cached recording is played without streaming', () async {
+      cache.cached = File(_FakeCache.downloadedPath);
+
+      await playFatiha();
+
+      expect(player.playedUrls, isEmpty, reason: 'no stream was needed');
+      expect(player.playedFiles, <String>[_FakeCache.downloadedPath]);
+      expect(controller.status, RecitationStatus.playing);
+    });
+
+    test('reports real download progress while the file is fetched', () async {
+      player.failRemoteWith = Exception('Failed to set source');
+      final progress = <double?>[];
+      controller.addListener(() => progress.add(controller.downloadProgress));
+
+      await playFatiha();
+
+      expect(progress, contains(0.5),
+          reason: 'the fake download reported 50 of 100 bytes');
+      expect(controller.downloadProgress, isNull);
+    });
+
+    test('a failed download reports a download error', () async {
+      player.failRemoteWith = Exception('Failed to set source');
+      cache.failWith = RecitationDownloadException('HTTP 500');
+
+      await playFatiha();
+
+      expect(controller.status, RecitationStatus.error);
+      expect(controller.error, 'download');
+      expect(controller.downloadProgress, isNull);
+    });
+
+    test('a failed download on an unreachable CDN reports a network error',
+        () async {
+      controller.dispose();
+      controller = AudioController(
+        playerFactory: () => player,
+        probe: (_) async => AudioProbe.offline,
+        cache: cache,
+      );
+      player.failRemoteWith = Exception('Failed to set source');
+      cache.failWith = RecitationDownloadException('SocketException');
+
+      await playFatiha();
+
+      expect(controller.error, 'network');
+    });
+
+    test('a local file the device still refuses reports a playback error',
+        () async {
+      // The stream fails, the download succeeds, and the device then refuses
+      // the local file too — a codec problem, not a network one.
+      player.failWith = Exception('weird decoder explosion');
+
+      await playFatiha();
+
+      expect(controller.error, 'playback');
+    });
+
+    test('cancelling during a download clears the progress state', () async {
+      player.failRemoteWith = Exception('Failed to set source');
+      cache.fetchDelay = const Duration(milliseconds: 40);
+
+      final pending = playFatiha();
+      await settle();
+      expect(controller.isDownloading, isTrue,
+          reason: 'the download is still running');
+
+      await controller.stop();
+      expect(controller.downloadProgress, isNull);
+
+      await pending;
+      await settle();
+      expect(controller.isPlaying, isFalse,
+          reason: 'a cancelled download must never start playing');
+      expect(controller.downloadProgress, isNull);
+    });
+  });
 }
 
 /// In-memory [RecitationPlayer] that records calls and lets the test drive the
@@ -714,6 +847,7 @@ class _FakePlayer implements RecitationPlayer {
   final StreamController<String> _logs = StreamController<String>.broadcast();
 
   final List<String> playedUrls = <String>[];
+  final List<String> playedFiles = <String>[];
   final List<Duration> seeks = <Duration>[];
   final List<double> rates = <double>[];
   int resumeCount = 0;
@@ -724,6 +858,11 @@ class _FakePlayer implements RecitationPlayer {
 
   /// When set, every command throws it — simulating a platform failure.
   Object? failWith;
+
+  /// When set, only `playUrl` throws it while `playFile` still succeeds. That
+  /// is the Windows Media Foundation case: the OS media stack cannot open a
+  /// remote URL, but a local file plays fine.
+  Object? failRemoteWith;
 
   /// Simulates a slow platform prepare (a large surah on a slow connection).
   Duration playDelay = Duration.zero;
@@ -755,7 +894,21 @@ class _FakePlayer implements RecitationPlayer {
   @override
   Future<void> playUrl(String url) async {
     _maybeThrow();
+    // The attempt is recorded either way, so a test can prove the stream was
+    // tried before the download fallback kicked in.
     playedUrls.add(url);
+    final remoteFailure = failRemoteWith;
+    if (remoteFailure != null) throw remoteFailure;
+    if (playDelay > Duration.zero) {
+      await Future<void>.delayed(playDelay);
+    }
+    _states.add(ap.PlayerState.playing);
+  }
+
+  @override
+  Future<void> playFile(String path) async {
+    _maybeThrow();
+    playedFiles.add(path);
     if (playDelay > Duration.zero) {
       await Future<void>.delayed(playDelay);
     }
@@ -800,4 +953,55 @@ class _FakePlayer implements RecitationPlayer {
 
   @override
   Future<void> dispose() async => disposeCount++;
+}
+
+/// In-memory [RecitationCache] so the download fallback never touches the
+/// network or the filesystem.
+class _FakeCache implements RecitationCache {
+  /// Path handed back by [fetch]. The file never has to exist because the
+  /// platform player is faked too.
+  static const String downloadedPath = 'zad-test-recitation.mp3';
+
+  /// Returned by [lookup] — set it to simulate an already-downloaded surah.
+  File? cached;
+
+  /// When set, [fetch] throws it.
+  Object? failWith;
+
+  /// Simulates a slow download, so a test can cancel one mid-flight.
+  Duration fetchDelay = Duration.zero;
+
+  final List<String> fetched = <String>[];
+  int clearCount = 0;
+
+  @override
+  Future<File?> lookup(String url) async => cached;
+
+  @override
+  Future<File> fetch(
+    String url, {
+    void Function(RecitationDownload progress)? onProgress,
+  }) async {
+    fetched.add(url);
+    onProgress?.call(const RecitationDownload(received: 50, total: 100));
+    if (fetchDelay > Duration.zero) {
+      await Future<void>.delayed(fetchDelay);
+    }
+    final failure = failWith;
+    if (failure != null) throw failure;
+    cached = File(downloadedPath);
+    return cached!;
+  }
+
+  @override
+  Future<int?> sizeOf(String url) async => null;
+
+  @override
+  Future<void> remove(String url) async {}
+
+  @override
+  Future<void> clear() async => clearCount++;
+
+  @override
+  Future<int> sizeBytes() async => 0;
 }

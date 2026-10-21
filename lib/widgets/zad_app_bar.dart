@@ -184,7 +184,7 @@ Future<bool> showZadConfirm(
                   foregroundColor: scheme.onError,
                 )
               : null,
-          child: Text(confirmLabel ?? l10n.t('tasbeeh.confirm')),
+          child: Text(confirmLabel ?? l10n.t('common.confirm')),
         ),
       ],
     ),

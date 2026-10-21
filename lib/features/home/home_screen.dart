@@ -66,8 +66,11 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: <Widget>[
           ZadIconButton(
             icon: Icons.notifications_none_rounded,
-            tooltip: l10n.t('settings.notifications'),
-            onPressed: () => _showNotificationsInfo(context),
+            tooltip: l10n.t('settings.prayerNotifications'),
+            // Opens the notification preferences themselves. It used to pop a
+            // snackbar with a build-time note — a developer message shown to
+            // the user, and a dead end.
+            onPressed: () => QuranNavigation.openSettings(context),
           ),
           ZadIconButton(
             icon: Icons.search_rounded,
@@ -105,11 +108,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  void _showNotificationsInfo(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    showZadSnack(context, l10n.t('settings.notificationsNote'));
-  }
 }
 
 class _GreetingCard extends StatelessWidget {
@@ -121,9 +119,6 @@ class _GreetingCard extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final hour = DateTime.now().hour;
-    final greeting = hour < 12
-        ? l10n.t('home.greetingMorning')
-        : (hour < 17 ? l10n.t('home.greetingAfternoon') : l10n.t('home.greetingEvening'));
 
     return ZadCard(
       padding: const EdgeInsets.symmetric(
@@ -159,7 +154,10 @@ class _GreetingCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '$greeting، ${l10n.t('home.subtitle')}',
+                  // The time of day is already carried by the icon above, so
+                  // pairing a second greeting ("good morning") with this line
+                  // only repeated it.
+                  l10n.t('home.subtitle'),
                   style: theme.textTheme.bodySmall,
                 ),
               ],
@@ -182,6 +180,7 @@ class _PrayerHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final tokens = context.tokens;
 
     if (prayer.state == PrayerState.loading && prayer.schedule == null) {
       return _HeroShell(
@@ -191,19 +190,19 @@ class _PrayerHeroCard extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                const SizedBox(
+                SizedBox(
                   width: 26,
                   height: 26,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.4,
-                    color: Color(0xFFB5EFD3),
+                    color: tokens.heroMuted,
                   ),
                 ),
                 const SizedBox(height: ZadSpacing.md),
                 Text(
                   l10n.t('prayer.calculating'),
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFFB5EFD3),
+                    color: tokens.heroMuted,
                   ),
                 ),
               ],
@@ -227,7 +226,7 @@ class _PrayerHeroCard extends StatelessWidget {
                   ? l10n.t('prayer.permissionDenied')
                   : l10n.t('home.locationNeeded'),
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFFDFEDE6),
+                color: tokens.heroOn.withValues(alpha: 0.9),
               ),
             ),
             const SizedBox(height: ZadSpacing.md),
@@ -237,8 +236,8 @@ class _PrayerHeroCard extends StatelessWidget {
                   child: FilledButton(
                     onPressed: () => prayer.refresh(requestPermission: true),
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFEDBF7A),
-                      foregroundColor: const Color(0xFF2B1F05),
+                      backgroundColor: tokens.heroGold,
+                      foregroundColor: tokens.heroGoldInk,
                     ),
                     child: Text(l10n.t('home.enableLocation')),
                   ),
@@ -248,8 +247,8 @@ class _PrayerHeroCard extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: () => prayer.openAppSettings(),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFEDBF7A),
-                      side: const BorderSide(color: Color(0xFFEDBF7A)),
+                      foregroundColor: tokens.heroGold,
+                      side: BorderSide(color: tokens.heroGold),
                     ),
                     child: Text(l10n.t('prayer.openSettings')),
                   ),
@@ -272,8 +271,8 @@ class _PrayerHeroCard extends StatelessWidget {
             FilledButton(
               onPressed: () => prayer.refresh(),
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFEDBF7A),
-                foregroundColor: const Color(0xFF2B1F05),
+                backgroundColor: tokens.heroGold,
+                foregroundColor: tokens.heroGoldInk,
               ),
               child: Text(l10n.t('common.retry')),
             ),
@@ -291,10 +290,10 @@ class _PrayerHeroCard extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              const Icon(
+              Icon(
                 Icons.mosque_outlined,
                 size: 20,
-                color: Color(0xFFEDBF7A),
+                color: tokens.heroGold,
               ),
               const SizedBox(width: ZadSpacing.sm),
               Expanded(
@@ -302,7 +301,7 @@ class _PrayerHeroCard extends StatelessWidget {
                   '${l10n.t('home.nextPrayer')}: '
                   '${l10n.t(next?.labelKey ?? 'prayer.fajr')}',
                   style: theme.textTheme.titleSmall?.copyWith(
-                    color: const Color(0xFFEDBF7A),
+                    color: tokens.heroGold,
                   ),
                 ),
               ),
@@ -310,7 +309,10 @@ class _PrayerHeroCard extends StatelessWidget {
                 label: l10n.t(
                   'prayer.method.${context.read<SettingsController>().settings.calculationMethod.name}',
                 ),
-                color: const Color(0xFFEDBF7A),
+                color: tokens.heroGold,
+                // The default label colour comes from the page background and
+                // would be invisible on the dark hero gradient.
+                foreground: tokens.heroGold,
               ),
             ],
           ),
@@ -318,7 +320,7 @@ class _PrayerHeroCard extends StatelessWidget {
           Text(
             l10n.t('home.remaining'),
             style: theme.textTheme.labelSmall?.copyWith(
-              color: const Color(0xFF9FC0B1),
+              color: tokens.heroMuted,
             ),
           ),
           const SizedBox(height: 2),
@@ -329,7 +331,7 @@ class _PrayerHeroCard extends StatelessWidget {
               weight: 700,
               height: 1.15,
               family: ZadFonts.arabicUi,
-              color: Colors.white,
+              color: tokens.heroOn,
             ),
           ),
           const SizedBox(height: ZadSpacing.sm),
@@ -338,7 +340,7 @@ class _PrayerHeroCard extends StatelessWidget {
               Icon(
                 Icons.place_outlined,
                 size: 13,
-                color: const Color(0xFF9FC0B1),
+                color: tokens.heroMuted,
               ),
               const SizedBox(width: 4),
               Expanded(
@@ -352,7 +354,7 @@ class _PrayerHeroCard extends StatelessWidget {
                           },
                         ),
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: const Color(0xFF9FC0B1),
+                    color: tokens.heroMuted,
                   ),
                 ),
               ),
@@ -364,8 +366,8 @@ class _PrayerHeroCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: prayer.dayProgress,
               minHeight: 4,
-              backgroundColor: const Color(0x33FFFFFF),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFEDBF7A)),
+              backgroundColor: tokens.heroTrack,
+              valueColor: AlwaysStoppedAnimation<Color>(tokens.heroGold),
             ),
           ),
           const SizedBox(height: ZadSpacing.md),
@@ -392,7 +394,7 @@ class _PrayerHeroCard extends StatelessWidget {
               icon: const Icon(Icons.schedule_outlined, size: 16),
               label: Text(l10n.t('prayer.title')),
               style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFEDBF7A),
+                foregroundColor: tokens.heroGold,
               ),
             ),
           ),
@@ -404,7 +406,7 @@ class _PrayerHeroCard extends StatelessWidget {
   Widget _heroTitle(BuildContext context, String text) => Text(
     text,
     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-      color: const Color(0xFFEDBF7A),
+      color: context.tokens.heroGold,
     ),
   );
 }
@@ -472,6 +474,7 @@ class _PrayerMilestone extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final tokens = context.tokens;
     final active = isNext || isCurrent;
     final icon = switch (slot) {
       PrayerSlot.fajr => Icons.wb_twilight,
@@ -488,17 +491,17 @@ class _PrayerMilestone extends StatelessWidget {
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color: active
-                ? const Color(0xFFEDBF7A).withValues(alpha: 0.18)
+                ? tokens.heroGold.withValues(alpha: 0.18)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(ZadRadius.md),
             border: active
-                ? Border.all(color: const Color(0x66EDBF7A))
+                ? Border.all(color: tokens.heroGold.withValues(alpha: 0.4))
                 : null,
           ),
           child: Icon(
             icon,
             size: 15,
-            color: active ? const Color(0xFFEDBF7A) : const Color(0xFF8FAEA0),
+            color: active ? tokens.heroGold : tokens.heroMuted,
           ),
         ),
         const SizedBox(height: 4),
@@ -507,10 +510,10 @@ class _PrayerMilestone extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: zadText(
-            size: 9,
+            size: 10,
             weight: active ? 700 : 500,
             family: ZadFonts.arabicUi,
-            color: active ? const Color(0xFFEDBF7A) : const Color(0xFF8FAEA0),
+            color: active ? tokens.heroGold : tokens.heroMuted,
           ),
         ),
         const SizedBox(height: 1),
@@ -521,10 +524,10 @@ class _PrayerMilestone extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: zadText(
-            size: 10,
+            size: 11,
             weight: 600,
             family: ZadFonts.latinUi,
-            color: active ? Colors.white : const Color(0xFFCFE0D7),
+            color: active ? tokens.heroOn : tokens.heroMuted,
           ),
         ),
       ],
@@ -543,7 +546,7 @@ class _TodayStats extends StatelessWidget {
     final tasbeeh = context.watch<TasbeehController>();
     final quran = context.watch<QuranController>();
 
-    final pagesRead = quran.hasReadingHistory ? quran.position.page : 0;
+    final pagesRead = quran.pagesToday;
 
     return Row(
       children: <Widget>[
@@ -568,7 +571,9 @@ class _TodayStats extends StatelessWidget {
           child: StatTile(
             label: l10n.t('home.quranPagesToday'),
             value: l10n.n(pagesRead),
-            unit: '/ ${l10n.n(604)}',
+            // No "/ 604" denominator: this is how many pages were opened
+            // *today*, not progress through the whole Mushaf — pairing the two
+            // read as if a day's reading had reached page 604.
             icon: Icons.menu_book_outlined,
           ),
         ),
@@ -654,6 +659,13 @@ class _DailyWirdCard extends StatelessWidget {
                   ],
                 ),
               const SizedBox(height: ZadSpacing.md),
+              const ZadDivider(),
+              const SizedBox(height: ZadSpacing.sm),
+              _WirdProgress(
+                done: quran.pagesToday,
+                target: context.watch<SettingsController>().settings.dailyWirdPages,
+              ),
+              const SizedBox(height: ZadSpacing.sm),
               Row(
                 children: <Widget>[
                   Expanded(
@@ -690,6 +702,86 @@ class _DailyWirdCard extends StatelessWidget {
                 ],
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Progress towards the user's daily Qur'an portion, or a nudge to set one.
+///
+/// The count comes from `QuranController.pagesToday` — distinct pages opened
+/// today — so the target and the progress are measured in the same unit.
+class _WirdProgress extends StatelessWidget {
+  const _WirdProgress({required this.done, required this.target});
+
+  final int done;
+  final int target;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final tokens = context.tokens;
+
+    if (target <= 0) {
+      return Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: TextButton.icon(
+          onPressed: () => QuranNavigation.openSettings(context),
+          icon: const Icon(Icons.flag_outlined, size: 16),
+          label: Text(l10n.t('home.wirdSet')),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: ZadSpacing.sm),
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+      );
+    }
+
+    final reached = done >= target;
+    final value = (done / target).clamp(0.0, 1.0);
+    final tint = reached ? scheme.primary : tokens.gold;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Icon(
+              reached ? Icons.check_circle_rounded : Icons.flag_outlined,
+              size: 15,
+              color: tint,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                reached
+                    ? l10n.t('home.wirdDone')
+                    : l10n.t(
+                        'home.wirdProgress',
+                        args: <String, Object?>{
+                          'done': l10n.n(done),
+                          'target': l10n.n(target),
+                        },
+                      ),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: reached ? scheme.primary : scheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(ZadRadius.full),
+          child: LinearProgressIndicator(
+            value: value,
+            minHeight: 5,
+            backgroundColor: scheme.surfaceContainerHighest,
+            valueColor: AlwaysStoppedAnimation<Color>(tint),
           ),
         ),
       ],

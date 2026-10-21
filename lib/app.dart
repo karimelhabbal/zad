@@ -6,11 +6,11 @@ import 'package:provider/single_child_widget.dart';
 import 'core/theme/app_theme.dart';
 import 'data/repositories/azkar_repository.dart';
 import 'data/repositories/local_store.dart';
-import 'data/repositories/mushaf_repository.dart';
 import 'data/repositories/quran_repository.dart';
 import 'data/repositories/tasbeeh_repository.dart';
 import 'l10n/app_localizations.dart';
 import 'state/audio_controller.dart';
+import 'state/audio_downloads_controller.dart';
 import 'state/azkar_controller.dart';
 import 'state/prayer_controller.dart';
 import 'state/qibla_controller.dart';
@@ -18,6 +18,7 @@ import 'state/quran_controller.dart';
 import 'state/settings_controller.dart';
 import 'state/tasbeeh_controller.dart';
 import 'features/splash/splash_screen.dart';
+import 'features/shell/notification_bridge.dart';
 
 /// Root widget: wires the controllers, the theme and the localisation.
 class ZadApp extends StatelessWidget {
@@ -30,10 +31,6 @@ class ZadApp extends StatelessWidget {
     return MultiProvider(
       providers: <SingleChildWidget>[
         Provider<LocalStore>.value(value: store),
-        Provider<MushafRepository>(
-          create: (_) => MushafRepository(),
-          dispose: (_, repo) => repo.dispose(),
-        ),
         ChangeNotifierProvider<SettingsController>(
           create: (_) => SettingsController(store),
         ),
@@ -43,6 +40,12 @@ class ZadApp extends StatelessWidget {
         // Owns the recitation player; created once and torn down with the app.
         ChangeNotifierProvider<AudioController>(
           create: (_) => AudioController(),
+        ),
+        // Manages offline recitation downloads. It reuses the player's own
+        // cache, so a surah downloaded here is played from disk immediately.
+        ChangeNotifierProvider<AudioDownloadsController>(
+          create: (ctx) =>
+              AudioDownloadsController(ctx.read<AudioController>().cache),
         ),
         ChangeNotifierProvider<AzkarController>(
           create: (_) => AzkarController(AzkarRepository(store)),
@@ -114,7 +117,12 @@ class _ZadMaterialApp extends StatelessWidget {
               // from API 35, where the platform decides).
               systemNavigationBarContrastEnforced: false,
             ),
-            child: child ?? const SizedBox.shrink(),
+            // Sits below MaterialApp so it can read both the localisation and
+            // the controllers, and keeps the OS alarm schedule in step with
+            // the user's settings.
+            child: NotificationBridge(
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
         );
       },

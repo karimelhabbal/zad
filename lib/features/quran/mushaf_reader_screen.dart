@@ -1,63 +1,45 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:qcf_quran_plus/qcf_quran_plus.dart' hide Surah;
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../data/models/quran_models.dart';
 import '../../data/models/settings_models.dart';
-import '../../data/repositories/mushaf_repository.dart';
+import '../../data/services/mushaf_font_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/quran_controller.dart';
 import '../../state/settings_controller.dart';
 import '../../widgets/common.dart';
 import '../../widgets/zad_app_bar.dart';
+import 'mushaf_about_screen.dart';
+import 'quran_audio.dart';
 import 'quran_reader_screen.dart';
 
-/// Night treatment for a Mushaf page.
+/// The paper colour the page is drawn on.
 ///
-/// The page is white paper with black ink. Inverting it maps 255 → 0 and
-/// 0 → 255, which is what a night reader wants, but a plain inversion turns the
-/// black ink into glaring pure white. Scaling by 0.92 and shifting by 234.6
-/// instead maps white paper to exactly 0 — a true black page, so an OLED panel
-/// draws no light at all — and black ink to 235, a soft off-white. The gold
-/// rules of the illuminated pages invert along with everything else and read as
-/// a muted blue-grey, which is the one visible cost of the treatment.
-const List<double> _nightMatrix = <double>[
-  -0.92, 0, 0, 0, 234.6, //
-  0, -0.92, 0, 0, 234.6, //
-  0, 0, -0.92, 0, 234.6, //
-  0, 0, 0, 1, 0, //
-];
+/// Light mode is a warm cream, the colour of the printed Mushaf's stock; dark
+/// mode is a very dark green-black rather than pure black, so the Tajweed ink
+/// keeps its contrast without glowing on an OLED panel.
+const Color _paperLight = Color(0xFFFBF6EE);
+const Color _paperDark = Color(0xFF0C1310);
 
-/// Keeps the page as printed and drops the paper to about 60% brightness, so it
-/// reads as a dimmed sheet rather than as a light source. Less aggressive than
-/// the night treatment, and the one to pick if inverted ink feels wrong.
-const List<double> _dimMatrix = <double>[
-  0.6, 0, 0, 0, 0, //
-  0, 0.6, 0, 0, 0, //
-  0, 0, 0.6, 0, 0, //
-  0, 0, 0, 1, 0, //
-];
+/// How far the page sits from the screen edge. The frame is drawn on this
+/// boundary, so the paper shows a hairline of margin outside it.
+const double _frameInset = 10;
 
-ColorFilter? _filterFor(MushafPageTreatment treatment) => switch (treatment) {
-  MushafPageTreatment.asPrinted => null,
-  MushafPageTreatment.dim => const ColorFilter.matrix(_dimMatrix),
-  // `auto` is resolved before this is called, so it can never arrive here.
-  MushafPageTreatment.invert ||
-  MushafPageTreatment.auto => const ColorFilter.matrix(_nightMatrix),
-};
-
-/// The authentic Madinah Mushaf reader.
+/// The authentic Madinah Mushaf reader, drawn from QCF fonts.
 ///
-/// Every page shown here is a real scan of the printed 604-page Madinah Mushaf
-/// (Hafs 'an Asim, 15 lines per page) fetched from a public CDN mirror and
-/// cached on the device. The app never fabricates or re-simulates a Mushaf page
-/// with ordinary Arabic text.
+/// Every page is rendered as text with the King Fahd Complex page font for that
+/// exact page — one font per page, 604 of them — so the page is sharp at any
+/// screen density, fills the screen edge to edge, and needs no page image and
+/// no network request. The text is the package's Uthmani data, used as-is: this
+/// reader never edits, re-orders or normalises a single character.
 class MushafReaderScreen extends StatefulWidget {
   const MushafReaderScreen({super.key, required this.page});
 
+  /// 1-based Mushaf page to open on.
   final int page;
 
   @override
@@ -65,44 +47,77 @@ class MushafReaderScreen extends StatefulWidget {
 }
 
 class _MushafReaderScreenState extends State<MushafReaderScreen> {
-  static const int _totalPages = MushafRepository.totalPages;
+  static const int _totalPages = MushafFontService.totalPages;
+
+  late final int _initialPage = widget.page.clamp(1, _totalPages);
 
   late final PageController _controller = PageController(
-    initialPage: widget.page.clamp(1, _totalPages) - 1,
+    initialPage: _initialPage - 1,
   );
 
-  late int _page = widget.page.clamp(1, _totalPages);
+  late int _page = _initialPage;
 
-  /// Immersive reading: the bottom dock can be hidden with a centre tap.
+  /// Page data + the font for [_initialPage]; the reader waits on this before
+  /// it builds, so the first page never flashes fallback glyphs.
+  late Future<void> _boot;
+
+  /// Immersive reading: chrome (top bar + bottom dock) hides on centre tap.
   bool _chrome = true;
 
-  /// Pinch-zoom is opt-in so that horizontal swiping keeps working.
-  bool _zoom = false;
+  /// True while a distant page's font is being loaded after a jump.
+  bool _jumping = false;
 
-  int _downloaded = 0;
+  /// Live value of the page slider while the user drags it.
+  double? _scrub;
 
   @override
   void initState() {
     super.initState();
+    // Hide the status and navigation bars; a swipe from the edge brings them
+    // back temporarily (immersiveSticky) without leaving the page.
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // The page is laid out for portrait. In landscape the page widget switches
+    // to a two-page spread, which halves the height each page gets and makes
+    // the Mushaf read badly — so the reader holds the device upright and hands
+    // the orientation back when it closes.
+    SystemChrome.setPreferredOrientations(const <DeviceOrientation>[
+      DeviceOrientation.portraitUp,
+    ]);
+    _boot = MushafFontService.ensurePage(_initialPage);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _persistPosition(_page);
-      _refreshDownloaded();
+      MushafFontService.preloadAround(_page);
     });
   }
 
   @override
   void dispose() {
+    // Hand the system bars and the orientation back to the rest of the app.
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.edgeToEdge,
+      overlays: SystemUiOverlay.values,
+    );
+    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     _controller.dispose();
     super.dispose();
   }
 
   QuranController get _quran => context.read<QuranController>();
 
-  MushafRepository get _repo => context.read<MushafRepository>();
-
   QuranData? get _data => _quran.data;
 
-  (Surah, QuranVerse)? get _firstVerse => _quran.firstVerseOfPage(_page);
+  /// First verse of [_page], memoised: the lookup scans the whole dataset, and
+  /// the label, juz and bookmark code all ask for it on every rebuild.
+  int _cachedPage = -1;
+  (Surah, QuranVerse)? _cachedFirstVerse;
+
+  (Surah, QuranVerse)? get _firstVerse {
+    if (_cachedPage != _page) {
+      _cachedPage = _page;
+      _cachedFirstVerse = _quran.firstVerseOfPage(_page);
+    }
+    return _cachedFirstVerse;
+  }
 
   int get _currentSurahNumber =>
       _firstVerse?.$1.number ?? _data?.surahForPage(_page).number ?? 1;
@@ -111,8 +126,7 @@ class _MushafReaderScreenState extends State<MushafReaderScreen> {
 
   int get _currentJuz => _data?.juzForPage(_page) ?? 1;
 
-  Surah? get _currentSurah =>
-      _firstVerse?.$1 ?? _data?.surahForPage(_page);
+  Surah? get _currentSurah => _firstVerse?.$1 ?? _data?.surahForPage(_page);
 
   String _surahLabel(AppLocalizations l10n) {
     final surah = _currentSurah;
@@ -123,7 +137,8 @@ class _MushafReaderScreenState extends State<MushafReaderScreen> {
   // ------------------------------------------------------------ position ---
 
   /// Records the reading position in the same store the text reader uses, so
-  /// switching display modes never loses the user's place.
+  /// switching display modes never loses the user's place. This is what the
+  /// app reopens on next launch.
   Future<void> _persistPosition(int page) async {
     final data = _data;
     if (data == null) return;
@@ -137,29 +152,47 @@ class _MushafReaderScreenState extends State<MushafReaderScreen> {
     );
   }
 
-  void _onPageChanged(int index) {
-    setState(() => _page = index + 1);
+  void _onPageChanged(int pageNumber) {
+    if (!mounted) return;
+    setState(() => _page = pageNumber.clamp(1, _totalPages));
     _persistPosition(_page);
+    MushafFontService.preloadAround(_page);
   }
 
-  void _goToPage(int page) {
+  /// Jumps to [page], loading that page's font first when it is not ready.
+  Future<void> _jumpTo(int page) async {
     final target = page.clamp(1, _totalPages);
     if (target == _page) return;
-    _controller.animateToPage(
-      target - 1,
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
-    );
+    final needsLoad = !MushafFontService.isPageReady(target);
+    if (needsLoad) setState(() => _jumping = true);
+    await MushafFontService.ensurePage(target);
+    if (!mounted) return;
+    if (needsLoad) setState(() => _jumping = false);
+    if (!_controller.hasClients) return;
+    _controller.jumpToPage(target - 1);
+    MushafFontService.preloadAround(target);
   }
 
-  void _step(int delta) => _goToPage(_page + delta);
+  void _step(int delta) {
+    final target = (_page + delta).clamp(1, _totalPages);
+    if (target == _page) return;
+    // Adjacent pages are already preloaded: slide them. Anything further is a
+    // jump, because animating across dozens of pages reads as a stuck screen.
+    if ((target - _page).abs() <= 3 && MushafFontService.isPageReady(target)) {
+      _controller.animateToPage(
+        target - 1,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+    } else {
+      _jumpTo(target);
+    }
+  }
 
   // ------------------------------------------------------------ bookmark ---
 
-  Future<void> _toggleBookmark() async {
+  Future<void> _toggleBookmarkAt(int surah, int ayah) async {
     final l10n = context.l10n;
-    final surah = _currentSurahNumber;
-    final ayah = _currentAyah;
     final wasBookmarked = _quran.isBookmarked(surah, ayah);
     await _quran.toggleBookmark(
       surah: surah,
@@ -176,167 +209,33 @@ class _MushafReaderScreenState extends State<MushafReaderScreen> {
     );
   }
 
-  // --------------------------------------------------------------- cache ---
+  Future<void> _toggleBookmark() =>
+      _toggleBookmarkAt(_currentSurahNumber, _currentAyah);
 
-  Future<void> _refreshDownloaded() async {
-    final count = await _repo.downloadedCount();
-    if (!mounted) return;
-    setState(() => _downloaded = count);
+  void _onAyahLongPress(int surah, int verse, LongPressStartDetails details) {
+    HapticFeedback.mediumImpact();
+    _toggleBookmarkAt(surah, verse);
   }
 
-  Future<void> _downloadAll() async {
-    final l10n = context.l10n;
-    final confirmed = await showZadConfirm(
-      context,
-      title: l10n.t('quran.downloadAll'),
-      body: l10n.t('quran.downloadAllBody'),
-      confirmLabel: l10n.t('common.apply'),
-    );
-    if (!confirmed || !mounted) return;
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => _DownloadDialog(repository: _repo),
-    );
-    await _refreshDownloaded();
-  }
+  // ------------------------------------------------------------ settings ---
 
-  Future<void> _clearCache() async {
-    final l10n = context.l10n;
-    final confirmed = await showZadConfirm(
-      context,
-      title: l10n.t('quran.clearCache'),
-      body: l10n.t('quran.cacheCleared'),
-      destructive: true,
-    );
-    if (!confirmed || !mounted) return;
-    await _repo.clearCache();
-    await _refreshDownloaded();
-    if (!mounted) return;
-    showZadSnack(context, l10n.t('quran.cacheCleared'));
-  }
-
-  Future<void> _showSourceInfo() async {
-    final l10n = context.l10n;
-    await _refreshDownloaded();
-    if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.t('quran.mushafSource')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(l10n.t('quran.edition')),
-            const SizedBox(height: ZadSpacing.sm),
-            Text(
-              l10n.t('quran.riwayah'),
-              style: Theme.of(dialogContext).textTheme.bodySmall,
-            ),
-            const SizedBox(height: ZadSpacing.sm),
-            Text(
-              MushafRepository.primarySourceLabel,
-              style: Theme.of(dialogContext).textTheme.bodySmall,
-            ),
-            Text(
-              MushafRepository.primarySourceUrl,
-              style: Theme.of(dialogContext).textTheme.labelSmall,
-            ),
-            const SizedBox(height: ZadSpacing.sm),
-            Text(
-              MushafRepository.fallbackSourceLabel,
-              style: Theme.of(dialogContext).textTheme.bodySmall,
-            ),
-            Text(
-              MushafRepository.fallbackSourceUrl,
-              style: Theme.of(dialogContext).textTheme.labelSmall,
-            ),
-            const SizedBox(height: ZadSpacing.sm),
-            Text(
-              l10n.t(
-                'quran.downloadedCount',
-                args: <String, Object?>{'n': l10n.n(_downloaded)},
-              ),
-              style: Theme.of(dialogContext).textTheme.bodySmall,
-            ),
-          ],
-        ),
-        actions: <Widget>[
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(l10n.t('common.close')),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------- appearance ---
-
-  /// Lets the reader choose how the page photograph is rendered.
-  ///
-  /// The page stays visible behind the sheet, so each option can be judged
-  /// against the real text rather than described — which is the only way to
-  /// decide whether inverted ink reads well for you.
-  Future<void> _showAppearancePicker() async {
-    final l10n = context.l10n;
+  Future<void> _toggleTajweed() async {
     final controller = context.read<SettingsController>();
-    final current = controller.settings.mushafPageTreatment;
+    await controller.setMushafTajweed(!controller.settings.mushafTajweed);
+  }
+
+  Future<void> _toggleTheme() async {
+    final controller = context.read<SettingsController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final selected = await showModalBottomSheet<MushafPageTreatment>(
-      context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                ZadSpacing.md,
-                ZadSpacing.md,
-                ZadSpacing.md,
-                ZadSpacing.xs,
-              ),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  l10n.t('quran.pageAppearance'),
-                  style: Theme.of(sheetContext).textTheme.titleMedium,
-                ),
-              ),
-            ),
-            for (final option in MushafPageTreatment.values)
-              ListTile(
-                leading: Icon(
-                  option == current
-                      ? Icons.radio_button_checked_rounded
-                      : Icons.radio_button_unchecked_rounded,
-                  color: option == current
-                      ? context.tokens.gold
-                      : Theme.of(sheetContext).colorScheme.onSurfaceVariant,
-                ),
-                title: Text(l10n.t(option.labelKey)),
-                subtitle: option == MushafPageTreatment.auto
-                    ? Text(
-                        l10n.t(
-                          isDark
-                              ? 'quran.treatment.invert'
-                              : 'quran.treatment.asPrinted',
-                        ),
-                        style: Theme.of(sheetContext).textTheme.labelSmall,
-                      )
-                    : null,
-                onTap: () => Navigator.of(sheetContext).pop(option),
-              ),
-            const SizedBox(height: ZadSpacing.sm),
-          ],
-        ),
-      ),
+    await controller.setThemeMode(
+      isDark ? AppThemeMode.light : AppThemeMode.dark,
     );
+  }
 
-    if (selected == null || !mounted) return;
-    await controller.setMushafPageTreatment(selected);
+  Future<void> _openAbout() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const MushafAboutScreen()),
+    );
   }
 
   // ----------------------------------------------------------- navigation ---
@@ -381,7 +280,7 @@ class _MushafReaderScreenState extends State<MushafReaderScreen> {
       ),
     );
     if (selected == null || !mounted) return;
-    _goToPage(selected);
+    await _jumpTo(selected);
   }
 
   Future<void> _switchToTextMode() async {
@@ -397,156 +296,203 @@ class _MushafReaderScreenState extends State<MushafReaderScreen> {
     );
   }
 
+  // -------------------------------------------------------------- gestures --
+
+  void _handleTap(TapUpDetails details, double width) {
+    if (_jumping) return;
+    final third = width / 3;
+    final dx = details.localPosition.dx;
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    if (dx < third) {
+      // Leading edge in the reading direction turns forward.
+      rtl ? _step(1) : _step(-1);
+    } else if (dx > third * 2) {
+      rtl ? _step(-1) : _step(1);
+    } else {
+      setState(() => _chrome = !_chrome);
+    }
+  }
+
+  /// Bookmarked ayahs on the visible page are tinted, so a saved place is
+  /// visible in the page itself rather than only in a list.
+  List<HighlightVerse> _highlights(
+    List<QuranBookmark> bookmarks,
+    Color tint,
+  ) {
+    if (bookmarks.isEmpty) return const <HighlightVerse>[];
+    return <HighlightVerse>[
+      for (final bookmark in bookmarks)
+        if (bookmark.page == _page)
+          HighlightVerse(
+            surah: bookmark.surah,
+            verseNumber: bookmark.ayah,
+            page: bookmark.page,
+            color: tint,
+          ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.tokens;
-    final scheme = Theme.of(context).colorScheme;
-    final bookmarked = _quran.isBookmarked(_currentSurahNumber, _currentAyah);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final paper = isDark ? _paperDark : _paperLight;
+    final settings = context.watch<SettingsController>().settings;
+    // Watched so a bookmark added on this page tints the ayah immediately.
+    final quran = context.watch<QuranController>();
+    final bookmarked = quran.isBookmarked(_currentSurahNumber, _currentAyah);
 
     return Scaffold(
-      backgroundColor: scheme.surface,
-      appBar: ZadAppBar(
-        title: _surahLabel(l10n).isEmpty
-            ? l10n.t('quran.mushaf')
-            : _surahLabel(l10n),
-        subtitle:
-            '${l10n.t('quran.juzHeader', args: <String, Object?>{'juz': l10n.n(_currentJuz)})}'
-            ' • '
-            '${l10n.t('quran.pageShort', args: <String, Object?>{'n': l10n.n(_page)})}',
-        showLogo: false,
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(Icons.arrow_forward_rounded),
-          tooltip: l10n.t('common.close'),
-        ),
-        actions: <Widget>[
-          ZadIconButton(
-            icon: _zoom ? Icons.zoom_out_map : Icons.zoom_in_map,
-            tooltip: l10n.t('quran.fontSize'),
-            onPressed: () => setState(() => _zoom = !_zoom),
-          ),
-          ZadIconButton(
-            icon: bookmarked
-                ? Icons.bookmark_rounded
-                : Icons.bookmark_border_rounded,
-            tooltip: l10n.t(
-              bookmarked ? 'quran.removeBookmark' : 'quran.addBookmark',
-            ),
-            onPressed: _toggleBookmark,
-          ),
-          PopupMenuButton<_MushafAction>(
-            icon: const Icon(Icons.more_vert_rounded),
-            tooltip: l10n.t('nav.more'),
-            onSelected: (action) {
-              switch (action) {
-                case _MushafAction.navigate:
-                  _showNavigator();
-                case _MushafAction.textMode:
-                  _switchToTextMode();
-                case _MushafAction.appearance:
-                  _showAppearancePicker();
-                case _MushafAction.download:
-                  _downloadAll();
-                case _MushafAction.clearCache:
-                  _clearCache();
-                case _MushafAction.source:
-                  _showSourceInfo();
-              }
-            },
-            itemBuilder: (context) => <PopupMenuEntry<_MushafAction>>[
-              PopupMenuItem<_MushafAction>(
-                value: _MushafAction.navigate,
-                child: _MenuRow(
-                  icon: Icons.explore_outlined,
-                  label: l10n.t('quran.goTo'),
-                ),
-              ),
-              PopupMenuItem<_MushafAction>(
-                value: _MushafAction.textMode,
-                child: _MenuRow(
-                  icon: Icons.article_outlined,
-                  label: l10n.t('quran.textMode'),
-                ),
-              ),
-              PopupMenuItem<_MushafAction>(
-                value: _MushafAction.appearance,
-                child: _MenuRow(
-                  icon: Icons.contrast_rounded,
-                  label: l10n.t('quran.pageAppearance'),
-                ),
-              ),
-              const PopupMenuDivider(),
-              PopupMenuItem<_MushafAction>(
-                value: _MushafAction.download,
-                child: _MenuRow(
-                  icon: Icons.download_outlined,
-                  label: l10n.t('quran.downloadAll'),
-                ),
-              ),
-              PopupMenuItem<_MushafAction>(
-                value: _MushafAction.clearCache,
-                child: _MenuRow(
-                  icon: Icons.delete_outline,
-                  label: l10n.t('quran.clearCache'),
-                ),
-              ),
-              PopupMenuItem<_MushafAction>(
-                value: _MushafAction.source,
-                child: _MenuRow(
-                  icon: Icons.verified_outlined,
-                  label: l10n.t('quran.mushafSource'),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      backgroundColor: paper,
       body: Stack(
         children: <Widget>[
+          // The page sits inside the frame: `_frameInset` of paper shows
+          // outside the hairline, so the line never crosses a line of text and
+          // nothing is cropped — the page is laid out in the remaining box.
           Positioned.fill(
-            child: PageView.builder(
-              controller: _controller,
-              itemCount: _totalPages,
-              physics: _zoom
-                  ? const NeverScrollableScrollPhysics()
-                  : const PageScrollPhysics(),
-              onPageChanged: _onPageChanged,
-              itemBuilder: (context, index) {
-                final page = index + 1;
-                return _MushafPageView(
-                  key: ValueKey<int>(page),
-                  page: page,
-                  repository: _repo,
-                  zoom: _zoom,
-                  onPrevious: () => _step(-1),
-                  onNext: () => _step(1),
-                  onCentreTap: () => setState(() => _chrome = !_chrome),
-                );
-              },
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(_frameInset),
+                child: FutureBuilder<void>(
+                  future: _boot,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return _PaperLoading(
+                        paper: paper,
+                        message: l10n.t('quran.mushafLoading'),
+                      );
+                    }
+                    if (snapshot.hasError) {
+                      return _PaperError(
+                        paper: paper,
+                        title: l10n.t('quran.mushafError'),
+                        body: l10n.t('quran.mushafErrorBody'),
+                        onRetry: () => setState(() {
+                          _boot = MushafFontService.ensurePage(_page);
+                        }),
+                      );
+                    }
+                    return QuranPageView(
+                      pageController: _controller,
+                      highlights: _highlights(
+                        quran.bookmarks,
+                        tokens.gold.withValues(alpha: 0.22),
+                      ),
+                      isDarkMode: isDark,
+                      isTajweed: settings.mushafTajweed,
+                      // The page's own paper colour, so any sub-pixel remainder
+                      // around the fitted lines is the same cream, not a panel.
+                      pageBackgroundColor: paper,
+                      enableTwoPageLayout: true,
+                      deferNewPages: true,
+                      onPageChanged: _onPageChanged,
+                      onLongPress: _onAyahLongPress,
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+
+          // Tap layer: thirds turn pages, the middle toggles the chrome. It is
+          // translucent, so swipes still reach the PageView underneath.
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, constraints) => GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTapUp: (details) =>
+                    _handleTap(details, constraints.maxWidth),
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
+
+          if (_jumping)
+            Positioned.fill(
+              child: ColoredBox(
+                color: paper.withValues(alpha: 0.72),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+            ),
+
+          // Chrome — hidden by a centre tap, so the page is never obstructed.
+          PositionedDirectional(
+            start: 0,
+            end: 0,
+            top: 0,
+            child: _SlideAway(
+              visible: _chrome,
+              offset: const Offset(0, -1.4),
+              child: _MushafTopBar(
+                title: _surahLabel(l10n).isEmpty
+                    ? l10n.t('quran.mushaf')
+                    : _surahLabel(l10n),
+                subtitle: l10n.t(
+                  'quran.pageIndicator',
+                  args: <String, Object?>{'page': l10n.n(_page)},
+                ),
+                paper: paper,
+                onClose: () => Navigator.of(context).maybePop(),
+                tajweed: settings.mushafTajweed,
+                bookmarked: bookmarked,
+                onTajweed: _toggleTajweed,
+                onTheme: _toggleTheme,
+                onBookmark: _toggleBookmark,
+                onGoTo: _showNavigator,
+                onAbout: _openAbout,
+                onTextMode: _switchToTextMode,
+              ),
             ),
           ),
           PositionedDirectional(
             start: 0,
             end: 0,
             bottom: 0,
-            child: AnimatedSlide(
-              offset: _chrome ? Offset.zero : const Offset(0, 1.35),
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
+            child: _SlideAway(
+              visible: _chrome,
+              offset: const Offset(0, 1.4),
               child: _MushafBottomBar(
+                paper: paper,
                 page: _page,
                 totalPages: _totalPages,
-                title: _surahLabel(l10n),
+                scrub: _scrub,
+                surah: _currentSurah,
+                ayah: _currentAyah,
                 subtitle: l10n.t(
-                  'quran.pageIndicator',
-                  args: <String, Object?>{'page': l10n.n(_page)},
+                  'quran.pageShort',
+                  args: <String, Object?>{'n': l10n.n(_page)},
                 ),
+                onScrub: (value) => setState(() => _scrub = value),
+                onScrubEnd: (value) {
+                  setState(() => _scrub = null);
+                  _jumpTo(value.round());
+                },
                 onPrevious: () => _step(-1),
                 onNext: () => _step(1),
-                onSeek: _goToPage,
                 onOpenNavigator: _showNavigator,
-                accent: tokens.gold,
+              ),
+            ),
+          ),
+
+          // The frame goes last so it is never washed out by the chrome's
+          // paper-coloured scrim; its inset keeps it clear of every control.
+          Positioned.fill(
+            child: IgnorePointer(
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(_frameInset),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => CustomPaint(
+                      painter: _PageFramePainter(
+                        twoPage: constraints.maxWidth >= _twoPageMinWidth,
+                        color: tokens.gold.withValues(
+                          alpha: isDark ? 0.38 : 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -556,7 +502,263 @@ class _MushafReaderScreenState extends State<MushafReaderScreen> {
   }
 }
 
-enum _MushafAction { navigate, textMode, appearance, download, clearCache, source }
+/// The width at which `QuranPageView` switches to a two-page spread
+/// (`quran_page_view.dart`: `constraints.maxWidth >= 750`). Mirrored here so
+/// the frame can split exactly where the two pages meet.
+///
+/// Kept in step with [_frameInset]: the page widget is laid out inside the
+/// inset, so this is compared against the *inner* width.
+const double _twoPageMinWidth = 750;
+
+/// Draws a hairline frame on the page boundary, and — when the reader shows a
+/// spread — one frame per page, so the right page is visibly separate from the
+/// left one.
+///
+/// It is painted over the inset page area, never inside it: the line lands in
+/// the paper margin, so it can never cross a line of Uthmani text, and nothing
+/// is cropped — the page is simply laid out in the box inside the frame.
+class _PageFramePainter extends CustomPainter {
+  const _PageFramePainter({required this.twoPage, required this.color});
+
+  final bool twoPage;
+  final Color color;
+
+  /// Half the gap between the two frames of a spread. Two hairlines 6px apart
+  /// read as the gutter of an open book without drawing a third line.
+  static const double _spineGap = 3;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = color;
+
+    const radius = Radius.circular(3);
+    const half = 0.5; // keep the 1px stroke fully inside the box
+
+    if (!twoPage) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTRB(half, half, size.width - half, size.height - half),
+          radius,
+        ),
+        stroke,
+      );
+      return;
+    }
+
+    final middle = size.width / 2;
+    // Right page first: this is an RTL Mushaf, so the right-hand page is the
+    // one read first.
+    final pages = <Rect>[
+      Rect.fromLTRB(middle + _spineGap, half, size.width - half, size.height - half),
+      Rect.fromLTRB(half, half, middle - _spineGap, size.height - half),
+    ];
+    for (final page in pages) {
+      canvas.drawRRect(RRect.fromRectAndRadius(page, radius), stroke);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PageFramePainter oldDelegate) =>
+      oldDelegate.twoPage != twoPage || oldDelegate.color != color;
+}
+
+/// Slides a chrome layer off-screen when the reader is immersed.
+class _SlideAway extends StatelessWidget {
+  const _SlideAway({
+    required this.visible,
+    required this.offset,
+    required this.child,
+  });
+
+  final bool visible;
+  final Offset offset;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      ignoring: !visible,
+      child: AnimatedSlide(
+        offset: visible ? Offset.zero : offset,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        child: AnimatedOpacity(
+          opacity: visible ? 1 : 0,
+          duration: const Duration(milliseconds: 180),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+/// Top chrome: reading position, appearance toggles, bookmark and menu.
+class _MushafTopBar extends StatelessWidget {
+  const _MushafTopBar({
+    required this.title,
+    required this.subtitle,
+    required this.paper,
+    required this.onClose,
+    required this.tajweed,
+    required this.bookmarked,
+    required this.onTajweed,
+    required this.onTheme,
+    required this.onBookmark,
+    required this.onGoTo,
+    required this.onAbout,
+    required this.onTextMode,
+  });
+
+  final String title;
+  final String subtitle;
+  final Color paper;
+  final VoidCallback onClose;
+  final bool tajweed;
+  final bool bookmarked;
+  final VoidCallback onTajweed;
+  final VoidCallback onTheme;
+  final VoidCallback onBookmark;
+  final VoidCallback onGoTo;
+  final VoidCallback onAbout;
+  final VoidCallback onTextMode;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final tokens = context.tokens;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[
+            paper.withValues(alpha: 0.98),
+            paper.withValues(alpha: 0.86),
+            paper.withValues(alpha: 0),
+          ],
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(
+            ZadSpacing.xs,
+            ZadSpacing.xs,
+            ZadSpacing.xs,
+            0,
+          ),
+          child: Row(
+            children: <Widget>[
+              IconButton(
+                onPressed: onClose,
+                tooltip: l10n.t('common.close'),
+                icon: const Icon(Icons.arrow_forward_rounded),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: zadText(
+                        size: 15,
+                        weight: 700,
+                        family: ZadFonts.arabicUi,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: onTajweed,
+                tooltip: l10n.t('quran.tajweed'),
+                isSelected: tajweed,
+                icon: const Icon(Icons.auto_awesome_outlined),
+                selectedIcon: Icon(Icons.auto_awesome, color: tokens.gold),
+              ),
+              IconButton(
+                onPressed: onTheme,
+                tooltip: l10n.t('quran.appearance'),
+                icon: Icon(
+                  theme.brightness == Brightness.dark
+                      ? Icons.light_mode_outlined
+                      : Icons.dark_mode_outlined,
+                ),
+              ),
+              IconButton(
+                onPressed: onBookmark,
+                tooltip: l10n.t(
+                  bookmarked ? 'quran.removeBookmark' : 'quran.addBookmark',
+                ),
+                icon: Icon(
+                  bookmarked
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_border_rounded,
+                  color: bookmarked ? tokens.gold : null,
+                ),
+              ),
+              PopupMenuButton<_MushafAction>(
+                icon: const Icon(Icons.more_vert_rounded),
+                tooltip: l10n.t('nav.more'),
+                onSelected: (action) {
+                  switch (action) {
+                    case _MushafAction.navigate:
+                      onGoTo();
+                    case _MushafAction.textMode:
+                      onTextMode();
+                    case _MushafAction.about:
+                      onAbout();
+                  }
+                },
+                itemBuilder: (context) => <PopupMenuEntry<_MushafAction>>[
+                  PopupMenuItem<_MushafAction>(
+                    value: _MushafAction.navigate,
+                    child: _MenuRow(
+                      icon: Icons.explore_outlined,
+                      label: l10n.t('quran.goTo'),
+                    ),
+                  ),
+                  PopupMenuItem<_MushafAction>(
+                    value: _MushafAction.textMode,
+                    child: _MenuRow(
+                      icon: Icons.article_outlined,
+                      label: l10n.t('quran.textMode'),
+                    ),
+                  ),
+                  PopupMenuItem<_MushafAction>(
+                    value: _MushafAction.about,
+                    child: _MenuRow(
+                      icon: Icons.verified_outlined,
+                      label: l10n.t('quran.aboutMushaf'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _MushafAction { navigate, textMode, about }
 
 class _MenuRow extends StatelessWidget {
   const _MenuRow({required this.icon, required this.label});
@@ -583,151 +785,40 @@ class _MenuRow extends StatelessWidget {
   }
 }
 
-/// One Mushaf page, loaded from the on-device cache or downloaded on demand.
-class _MushafPageView extends StatefulWidget {
-  const _MushafPageView({
-    super.key,
-    required this.page,
-    required this.repository,
-    required this.zoom,
-    required this.onPrevious,
-    required this.onNext,
-    required this.onCentreTap,
-  });
-
-  final int page;
-  final MushafRepository repository;
-  final bool zoom;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
-  final VoidCallback onCentreTap;
-
-  @override
-  State<_MushafPageView> createState() => _MushafPageViewState();
-}
-
-class _MushafPageViewState extends State<_MushafPageView> {
-  late Future<File> _future = widget.repository.ensurePage(widget.page);
-
-  @override
-  void didUpdateWidget(covariant _MushafPageView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.page != widget.page) {
-      _future = widget.repository.ensurePage(widget.page);
-    }
-  }
-
-  void _retry() {
-    setState(() {
-      _future = widget.repository.ensurePage(widget.page, forceRefresh: true);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final scheme = Theme.of(context).colorScheme;
-
-    return ColoredBox(
-      color: scheme.surfaceContainerLow,
-      child: FutureBuilder<File>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return LoadingView(message: l10n.t('quran.mushafLoading'));
-          }
-          if (snapshot.hasError || !snapshot.hasData) {
-            return ErrorView(
-              title: l10n.t('quran.mushafError'),
-              body: l10n.t('quran.mushafErrorBody'),
-              onRetry: _retry,
-            );
-          }
-          final file = snapshot.data!;
-          final treatment = context
-              .watch<SettingsController>()
-              .settings
-              .mushafPageTreatment
-              .resolve(isDark: Theme.of(context).brightness == Brightness.dark);
-          Widget image = Padding(
-            padding: const EdgeInsets.all(6),
-            child: Image.file(
-              file,
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.medium,
-              gaplessPlayback: true,
-              errorBuilder: (context, error, stack) => ErrorView(
-                title: l10n.t('quran.mushafError'),
-                body: l10n.t('quran.mushafErrorBody'),
-                onRetry: _retry,
-              ),
-            ),
-          );
-          // The filter wraps the image, not the gesture layer, so taps, swipes
-          // and pinch-zoom keep working exactly as before.
-          final filter = _filterFor(treatment);
-          if (filter != null) {
-            image = ColorFiltered(colorFilter: filter, child: image);
-          }
-
-          if (widget.zoom) {
-            return InteractiveViewer(
-              minScale: 1,
-              maxScale: 5,
-              child: image,
-            );
-          }
-
-          final rtl = Directionality.of(context) == TextDirection.rtl;
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              return GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTapUp: (details) {
-                  final third = constraints.maxWidth / 3;
-                  final dx = details.localPosition.dx;
-                  if (dx < third) {
-                    // Leading edge in the reading direction.
-                    rtl ? widget.onNext() : widget.onPrevious();
-                  } else if (dx > third * 2) {
-                    rtl ? widget.onPrevious() : widget.onNext();
-                  } else {
-                    widget.onCentreTap();
-                  }
-                },
-                child: image,
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// Bottom dock: page scrubber plus previous / next navigation.
+/// Bottom chrome: the listen affordance, page scrubber and previous / next.
 class _MushafBottomBar extends StatelessWidget {
   const _MushafBottomBar({
+    required this.paper,
     required this.page,
     required this.totalPages,
-    required this.title,
+    required this.scrub,
+    required this.surah,
+    required this.ayah,
     required this.subtitle,
+    required this.onScrub,
+    required this.onScrubEnd,
     required this.onPrevious,
     required this.onNext,
-    required this.onSeek,
     required this.onOpenNavigator,
-    required this.accent,
   });
 
+  final Color paper;
   final int page;
   final int totalPages;
-  final String title;
+  final double? scrub;
+
+  /// The surah this page belongs to; `null` until the dataset is loaded.
+  final Surah? surah;
+
+  /// First ayah on this page — the ayah the listen sheet pre-selects.
+  final int ayah;
+
   final String subtitle;
+  final ValueChanged<double> onScrub;
+  final ValueChanged<double> onScrubEnd;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
-  final ValueChanged<int> onSeek;
   final VoidCallback onOpenNavigator;
-  final Color accent;
 
   @override
   Widget build(BuildContext context) {
@@ -736,106 +827,114 @@ class _MushafBottomBar extends StatelessWidget {
     final tokens = context.tokens;
     final rtl = Directionality.of(context) == TextDirection.rtl;
 
-    return Material(
-      color: tokens.navigationFill,
-      elevation: 0,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(color: tokens.cardBorder),
-          ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: <Color>[
+            paper.withValues(alpha: 0.98),
+            paper.withValues(alpha: 0.86),
+            paper.withValues(alpha: 0),
+          ],
         ),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(
-              ZadSpacing.md,
-              2,
-              ZadSpacing.md,
-              ZadSpacing.sm,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    trackHeight: 2.5,
-                    activeTrackColor: accent,
-                    thumbColor: accent,
-                    overlayShape: const RoundSliderOverlayShape(
-                      overlayRadius: 14,
-                    ),
-                    thumbShape: const RoundSliderThumbShape(
-                      enabledThumbRadius: 6.5,
-                    ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(
+            ZadSpacing.md,
+            ZadSpacing.lg,
+            ZadSpacing.md,
+            ZadSpacing.xs,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (surah case final Surah current)
+                ListenBar(surah: current, initialAyah: ayah),
+              const SizedBox(height: ZadSpacing.xs),
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 2.5,
+                  activeTrackColor: tokens.gold,
+                  thumbColor: tokens.gold,
+                  overlayShape: const RoundSliderOverlayShape(
+                    overlayRadius: 14,
                   ),
-                  child: Slider(
-                    value: page.toDouble(),
-                    min: 1,
-                    max: totalPages.toDouble(),
-                    onChanged: (value) => onSeek(value.round()),
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: 6.5,
                   ),
                 ),
-                Row(
-                  children: <Widget>[
-                    IconButton(
-                      onPressed: onPrevious,
-                      tooltip: null,
-                      icon: Icon(
-                        rtl
-                            ? Icons.chevron_right_rounded
-                            : Icons.chevron_left_rounded,
-                      ),
+                child: Slider(
+                  value: (scrub ?? page.toDouble()).clamp(
+                    1,
+                    totalPages.toDouble(),
+                  ),
+                  min: 1,
+                  max: totalPages.toDouble(),
+                  onChanged: onScrub,
+                  onChangeEnd: onScrubEnd,
+                ),
+              ),
+              Row(
+                children: <Widget>[
+                  IconButton(
+                    onPressed: onPrevious,
+                    tooltip: null,
+                    icon: Icon(
+                      rtl
+                          ? Icons.chevron_right_rounded
+                          : Icons.chevron_left_rounded,
                     ),
-                    Expanded(
-                      child: InkWell(
-                        onTap: onOpenNavigator,
-                        borderRadius: BorderRadius.circular(ZadRadius.md),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 4,
-                            horizontal: ZadSpacing.sm,
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Text(
-                                title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: zadText(
-                                  size: 14,
-                                  weight: 600,
-                                  family: ZadFonts.arabicUi,
-                                  color: scheme.onSurface,
-                                ),
+                  ),
+                  Expanded(
+                    child: InkWell(
+                      onTap: onOpenNavigator,
+                      borderRadius: BorderRadius.circular(ZadRadius.md),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 4,
+                          horizontal: ZadSpacing.sm,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Text(
+                              subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: zadText(
+                                size: 14,
+                                weight: 600,
+                                family: ZadFonts.arabicUi,
+                                color: scheme.onSurface,
                               ),
-                              Text(
-                                subtitle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: scheme.onSurfaceVariant,
-                                ),
+                            ),
+                            Text(
+                              AppLocalizations.of(context).t('quran.goTo'),
+                              maxLines: 1,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: scheme.onSurfaceVariant,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    IconButton(
-                      onPressed: onNext,
-                      tooltip: null,
-                      icon: Icon(
-                        rtl
-                            ? Icons.chevron_left_rounded
-                            : Icons.chevron_right_rounded,
-                      ),
+                  ),
+                  IconButton(
+                    onPressed: onNext,
+                    tooltip: null,
+                    icon: Icon(
+                      rtl
+                          ? Icons.chevron_left_rounded
+                          : Icons.chevron_right_rounded,
                     ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -843,102 +942,54 @@ class _MushafBottomBar extends StatelessWidget {
   }
 }
 
-/// Progress dialog for the offline Mushaf download.
-class _DownloadDialog extends StatefulWidget {
-  const _DownloadDialog({required this.repository});
+/// Loading state drawn on the page's own paper colour, so the transition into
+/// the first page is a fade of ink rather than a flash of another surface.
+class _PaperLoading extends StatelessWidget {
+  const _PaperLoading({required this.paper, required this.message});
 
-  final MushafRepository repository;
-
-  @override
-  State<_DownloadDialog> createState() => _DownloadDialogState();
-}
-
-class _DownloadDialogState extends State<_DownloadDialog> {
-  int _done = 0;
-  int _failures = 0;
-  bool _finished = false;
-  bool _cancelled = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _run();
-  }
-
-  @override
-  void dispose() {
-    _cancelled = true;
-    super.dispose();
-  }
-
-  Future<void> _run() async {
-    final failures = await widget.repository.downloadAll(
-      onProgress: (done, _) {
-        if (!mounted) return;
-        setState(() => _done = done);
-      },
-      shouldCancel: () => _cancelled || !mounted,
-    );
-    if (!mounted) return;
-    setState(() {
-      _failures = failures;
-      _finished = true;
-    });
-  }
+  final Color paper;
+  final String message;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final scheme = Theme.of(context).colorScheme;
-    final ratio = _done / MushafRepository.totalPages;
-
-    return AlertDialog(
-      title: Text(l10n.t('quran.downloadAll')),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          ClipRRect(
-            borderRadius: BorderRadius.circular(ZadRadius.full),
-            child: LinearProgressIndicator(
-              value: ratio.clamp(0.0, 1.0),
-              minHeight: 6,
+    return ColoredBox(
+      color: paper,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
             ),
-          ),
-          const SizedBox(height: ZadSpacing.md),
-          Text(
-            l10n.t(
-              'quran.downloading',
-              args: <String, Object?>{
-                'done': l10n.n(_done),
-                'total': l10n.n(MushafRepository.totalPages),
-              },
-            ),
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          if (_finished && _failures > 0) ...<Widget>[
-            const SizedBox(height: ZadSpacing.sm),
-            Text(
-              l10n.t('quran.mushafErrorBody'),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: scheme.error,
-              ),
-            ),
+            const SizedBox(height: ZadSpacing.md),
+            Text(message, style: Theme.of(context).textTheme.bodySmall),
           ],
-        ],
+        ),
       ),
-      actions: <Widget>[
-        if (!_finished)
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.t('common.cancel')),
-          )
-        else
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.t('common.done')),
-          ),
-      ],
+    );
+  }
+}
+
+class _PaperError extends StatelessWidget {
+  const _PaperError({
+    required this.paper,
+    required this.title,
+    required this.body,
+    required this.onRetry,
+  });
+
+  final Color paper;
+  final String title;
+  final String body;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: paper,
+      child: ErrorView(title: title, body: body, onRetry: onRetry),
     );
   }
 }
@@ -1093,7 +1144,9 @@ class _JuzTab extends StatelessWidget {
             size: 20,
             color: context.tokens.gold,
           ),
-          title: Text(l10n.t('quran.juzShort', args: <String, Object?>{'n': l10n.n(juz)})),
+          title: Text(
+            l10n.t('quran.juzShort', args: <String, Object?>{'n': l10n.n(juz)}),
+          ),
           subtitle: Text(
             '${surah.arabicName} • ${l10n.t('quran.pageShort', args: <String, Object?>{'n': l10n.n(start)})}',
             style: Theme.of(context).textTheme.labelSmall,

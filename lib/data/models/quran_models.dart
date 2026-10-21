@@ -221,6 +221,35 @@ class QuranData {
   int pageOf(int surahNumber, int ayahNumber) =>
       surah(surahNumber).verse(ayahNumber).page;
 
+  /// Number of ayahs that precede each surah, so the global index of an ayah
+  /// is an O(1) lookup instead of a scan over the whole dataset.
+  late final List<int> _ayahOffsets = () {
+    final offsets = List<int>.filled(surahs.length, 0);
+    var running = 0;
+    for (var i = 0; i < surahs.length; i++) {
+      offsets[i] = running;
+      running += surahs[i].ayahCount;
+    }
+    return offsets;
+  }();
+
+  /// 1-based index of `[surah]:[ayah]` in the whole Qur'an (`1..6236`).
+  ///
+  /// This is the numbering the recitation CDN uses for ayah-level files
+  /// (`audio/128/{reciter}/{n}.mp3`): `1` is 1:1, `8` is 2:1 and `262` is
+  /// 2:255. It is derived from the dataset's own ayah counts, so it can never
+  /// drift from the text the reader is showing.
+  int globalAyahNumber(int surahNumber, int ayahNumber) {
+    final index = surahNumber - 1;
+    if (index < 0 || index >= _ayahOffsets.length) return 1;
+    return _ayahOffsets[index] + ayahNumber;
+  }
+
+  /// Global index of the first ayah of [surahNumber] — the base a reader needs
+  /// to turn "ayah 5 of this surah" into a CDN file name.
+  int firstAyahGlobalNumber(int surahNumber) =>
+      globalAyahNumber(surahNumber, 1);
+
   /// Deterministic "verse of the day" — stable for the whole calendar day.
   (Surah, QuranVerse) verseOfTheDay(DateTime date) {
     final dayIndex = DateTime(

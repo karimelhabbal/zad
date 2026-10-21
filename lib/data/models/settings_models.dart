@@ -1,4 +1,4 @@
-import 'package:adhan/adhan.dart' as adhan;
+import 'package:adhan_dart/adhan_dart.dart' as adhan;
 
 import 'quran_models.dart';
 import 'reciter.dart';
@@ -13,7 +13,7 @@ enum AppThemeMode {
 }
 
 /// Prayer-time calculation methods exposed in settings. The identifiers map
-/// onto the pure-Dart `adhan` library — no paid service is involved.
+/// onto the pure-Dart `adhan_dart` library — no paid service is involved.
 ///
 /// [egyptian] is the default: this app's audience is Egyptian, and it is the
 /// calendar Al-Azhar and the Ministry of Awqaf actually publish. See
@@ -34,22 +34,36 @@ enum PrayerCalculationMethod {
 
   String get labelKey => 'settings.method.$name';
 
-  adhan.CalculationMethod get adhanMethod => switch (this) {
+  /// The library's parameters for this method.
+  ///
+  /// `adhan_dart` exposes the presets as factories on
+  /// [adhan.CalculationMethodParameters] rather than as values on the
+  /// [adhan.CalculationMethod] enum, and every call returns a fresh, mutable
+  /// [adhan.CalculationParameters] — so callers may adjust the result without
+  /// affecting any other calculation.
+  adhan.CalculationParameters get adhanParameters => switch (this) {
     PrayerCalculationMethod.muslimWorldLeague =>
-      adhan.CalculationMethod.muslim_world_league,
-    PrayerCalculationMethod.egyptian => adhan.CalculationMethod.egyptian,
-    PrayerCalculationMethod.karachi => adhan.CalculationMethod.karachi,
-    PrayerCalculationMethod.ummAlQura => adhan.CalculationMethod.umm_al_qura,
-    PrayerCalculationMethod.dubai => adhan.CalculationMethod.dubai,
+      adhan.CalculationMethodParameters.muslimWorldLeague(),
+    PrayerCalculationMethod.egyptian =>
+      adhan.CalculationMethodParameters.egyptian(),
+    PrayerCalculationMethod.karachi =>
+      adhan.CalculationMethodParameters.karachi(),
+    PrayerCalculationMethod.ummAlQura =>
+      adhan.CalculationMethodParameters.ummAlQura(),
+    PrayerCalculationMethod.dubai => adhan.CalculationMethodParameters.dubai(),
     PrayerCalculationMethod.moonSightingCommittee =>
-      adhan.CalculationMethod.moon_sighting_committee,
+      adhan.CalculationMethodParameters.moonsightingCommittee(),
     PrayerCalculationMethod.northAmerica =>
-      adhan.CalculationMethod.north_america,
-    PrayerCalculationMethod.kuwait => adhan.CalculationMethod.kuwait,
-    PrayerCalculationMethod.qatar => adhan.CalculationMethod.qatar,
-    PrayerCalculationMethod.singapore => adhan.CalculationMethod.singapore,
-    PrayerCalculationMethod.turkey => adhan.CalculationMethod.turkey,
-    PrayerCalculationMethod.tehran => adhan.CalculationMethod.tehran,
+      adhan.CalculationMethodParameters.northAmerica(),
+    PrayerCalculationMethod.kuwait =>
+      adhan.CalculationMethodParameters.kuwait(),
+    PrayerCalculationMethod.qatar => adhan.CalculationMethodParameters.qatar(),
+    PrayerCalculationMethod.singapore =>
+      adhan.CalculationMethodParameters.singapore(),
+    PrayerCalculationMethod.turkey =>
+      adhan.CalculationMethodParameters.turkiye(),
+    PrayerCalculationMethod.tehran =>
+      adhan.CalculationMethodParameters.tehran(),
   };
 
   static PrayerCalculationMethod fromStorage(String? value) =>
@@ -63,6 +77,7 @@ enum AsrMadhab {
   standard,
   hanafi;
 
+  /// Shadow-length factor for Asr: 1 (Shafi) or 2 (Hanafi).
   adhan.Madhab get adhanMadhab => this == AsrMadhab.hanafi
       ? adhan.Madhab.hanafi
       : adhan.Madhab.shafi;
@@ -84,50 +99,16 @@ enum HighLatitudeOption {
   adhan.HighLatitudeRule? get adhanRule => switch (this) {
     HighLatitudeOption.none => null,
     HighLatitudeOption.middleOfTheNight =>
-      adhan.HighLatitudeRule.middle_of_the_night,
+      adhan.HighLatitudeRule.middleOfTheNight,
     HighLatitudeOption.seventhOfTheNight =>
-      adhan.HighLatitudeRule.seventh_of_the_night,
-    HighLatitudeOption.angleBased => adhan.HighLatitudeRule.twilight_angle,
+      adhan.HighLatitudeRule.seventhOfTheNight,
+    HighLatitudeOption.angleBased => adhan.HighLatitudeRule.twilightAngle,
   };
 
   static HighLatitudeOption fromStorage(String? value) =>
       HighLatitudeOption.values.firstWhere(
         (e) => e.name == value,
         orElse: () => HighLatitudeOption.none,
-      );
-}
-
-/// How a Mushaf page photograph is treated for display.
-///
-/// Every page is a photograph of white paper with black ink. That is exactly
-/// what you want in daylight, and a torch in the face at night — which is why
-/// a Mushaf reader needs a decision here rather than a single rendering.
-enum MushafPageTreatment {
-  /// Follow the theme: as printed in light mode, inverted in dark mode.
-  auto,
-
-  /// Always the photograph as printed — white paper, black ink.
-  asPrinted,
-
-  /// Keep the paper white but dim it, like reading under a low lamp.
-  dim,
-
-  /// Invert the page — dark paper, light ink. The only option that does not
-  /// light up an OLED screen, and the gentlest on the eyes at night.
-  invert;
-
-  String get labelKey => 'quran.treatment.$name';
-
-  /// The treatment actually applied for a given theme brightness.
-  MushafPageTreatment resolve({required bool isDark}) {
-    if (this != MushafPageTreatment.auto) return this;
-    return isDark ? MushafPageTreatment.invert : MushafPageTreatment.asPrinted;
-  }
-
-  static MushafPageTreatment fromStorage(String? value) =>
-      MushafPageTreatment.values.firstWhere(
-        (e) => e.name == value,
-        orElse: () => MushafPageTreatment.auto,
       );
 }
 
@@ -185,7 +166,7 @@ class AppSettings {
     this.localeCode = 'ar',
     this.quranDisplayMode = QuranDisplayMode.text,
     this.quranFontScale = 1.0,
-    this.mushafPageTreatment = MushafPageTreatment.auto,
+    this.mushafTajweed = true,
     this.calculationMethod = PrayerCalculationMethod.egyptian,
     this.asrMadhab = AsrMadhab.standard,
     this.highLatitude = HighLatitudeOption.none,
@@ -198,6 +179,7 @@ class AppSettings {
     this.tasbeehVibration = true,
     this.keepScreenAwake = false,
     this.reciterId = QuranReciters.defaultReciterId,
+    this.dailyWirdPages = 0,
   });
 
   final AppThemeMode themeMode;
@@ -207,8 +189,11 @@ class AppSettings {
   /// 0.85 – 1.6 multiplier applied to the text-reading font size.
   final double quranFontScale;
 
-  /// How the Mushaf page photograph is rendered — see [MushafPageTreatment].
-  final MushafPageTreatment mushafPageTreatment;
+  /// Whether the Mushaf page is drawn with Uthmani Tajweed colours.
+  ///
+  /// Off means a single ink colour for the whole page, which some readers
+  /// prefer; the letters themselves are identical either way.
+  final bool mushafTajweed;
   final PrayerCalculationMethod calculationMethod;
   final AsrMadhab asrMadhab;
   final HighLatitudeOption highLatitude;
@@ -225,6 +210,17 @@ class AppSettings {
   /// to a verified catalogue entry via [reciter].
   final String reciterId;
 
+  /// How many Mushaf pages the user wants to read per day. `0` means no wird
+  /// has been set, and the home screen simply shows the reading position.
+  ///
+  /// Deliberately a plain page count rather than a juz/hizb fraction: the
+  /// Mushaf reader counts pages, so the target and the progress it drives are
+  /// measured in the same unit and can never disagree.
+  final int dailyWirdPages;
+
+  /// True when the user has set a daily portion.
+  bool get hasDailyWird => dailyWirdPages > 0;
+
   /// The resolved reciter, guaranteed to be one the CDN actually serves.
   QuranReciter get reciter => QuranReciters.byId(reciterId);
 
@@ -235,7 +231,7 @@ class AppSettings {
     String? localeCode,
     QuranDisplayMode? quranDisplayMode,
     double? quranFontScale,
-    MushafPageTreatment? mushafPageTreatment,
+    bool? mushafTajweed,
     PrayerCalculationMethod? calculationMethod,
     AsrMadhab? asrMadhab,
     HighLatitudeOption? highLatitude,
@@ -248,12 +244,13 @@ class AppSettings {
     bool? tasbeehVibration,
     bool? keepScreenAwake,
     String? reciterId,
+    int? dailyWirdPages,
   }) => AppSettings(
     themeMode: themeMode ?? this.themeMode,
     localeCode: localeCode ?? this.localeCode,
     quranDisplayMode: quranDisplayMode ?? this.quranDisplayMode,
     quranFontScale: quranFontScale ?? this.quranFontScale,
-    mushafPageTreatment: mushafPageTreatment ?? this.mushafPageTreatment,
+    mushafTajweed: mushafTajweed ?? this.mushafTajweed,
     calculationMethod: calculationMethod ?? this.calculationMethod,
     asrMadhab: asrMadhab ?? this.asrMadhab,
     highLatitude: highLatitude ?? this.highLatitude,
@@ -266,6 +263,7 @@ class AppSettings {
     tasbeehVibration: tasbeehVibration ?? this.tasbeehVibration,
     keepScreenAwake: keepScreenAwake ?? this.keepScreenAwake,
     reciterId: reciterId ?? this.reciterId,
+    dailyWirdPages: dailyWirdPages ?? this.dailyWirdPages,
   );
 }
 

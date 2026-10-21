@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart' as ap;
 // `ChangeNotifier` comes through `widgets.dart`, which re-exports it from
@@ -7,6 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 
 import '../data/models/reciter.dart';
+import '../data/repositories/recitation_cache.dart';
 
 /// Playback lifecycle exposed to the UI.
 ///
@@ -14,6 +16,14 @@ import '../data/models/reciter.dart';
 /// a long surah this is the same period the OS spends buffering, so the UI
 /// shows a spinner rather than pretending to be playing.
 enum RecitationStatus { idle, loading, playing, paused, completed, error }
+
+/// What the user asked to hear.
+///
+/// The CDN serves two different file shapes, and which one is loaded changes
+/// both the URL and the behaviour at the end of a track: a [surah] is one
+/// continuous file that simply ends, whereas an [ayah] is a few seconds of
+/// audio that hands over to the next ayah of the same surah.
+enum RecitationScope { surah, ayah }
 
 /// Result of the pre-flight check on a stream URL.
 enum AudioProbe { ok, missing, forbidden, offline }
@@ -40,6 +50,14 @@ abstract class RecitationPlayer {
   Stream<String> get onLog;
 
   Future<void> playUrl(String url);
+
+  /// Plays a recording that is already on disk.
+  ///
+  /// Used by the download fallback: some platform media stacks cannot open a
+  /// remote URL (see [RecitationCache]), but every one of them plays a local
+  /// file.
+  Future<void> playFile(String path);
+
   Future<void> resume();
   Future<void> pause();
   Future<void> stop();
@@ -77,6 +95,9 @@ class AudioPlayersRecitationPlayer implements RecitationPlayer {
 
   @override
   Future<void> playUrl(String url) => _player.play(ap.UrlSource(url));
+
+  @override
+  Future<void> playFile(String path) => _player.play(ap.DeviceFileSource(path));
 
   @override
   Future<void> resume() => _player.resume();
@@ -135,24 +156,41 @@ Future<AudioProbe> probeAudioUrl(String url) async {
 
 /// Owns Qur'an recitation playback for the whole app.
 ///
-/// **Playback granularity.** Audio is streamed one *surah* per file
-/// (`audio-surah/128/{reciter}/{surah}.mp3`). That is the granularity the CDN
-/// actually serves for the verified catalogue, it yields a real duration and a
-/// working scrubber, and it needs a single HTTP request per surah. The app does
-/// **not** claim per-ayah highlighting: the CDN exposes no timing map, and
-/// inventing one would be fabrication.
+/// **Playback granularity.** Two shapes, both from the same CDN and edition:
+/// a whole *surah* as one file (`audio-surah/128/{reciter}/{surah}.mp3`), or a
+/// single *ayah* (`audio/128/{reciter}/{globalAyah}.mp3`). The surah file gives
+/// a real duration and a working scrubber in one request; the ayah files are
+/// what let the listener start exactly where they want. [RecitationScope]
+/// records which one is loaded, and an ayah hands over to the next ayah of the
+/// same surah when it ends.
+///
+/// **Remote sources.** The stream is handed to the platform player first. When
+/// that player cannot open the URL the recording is fetched by Dart into
+/// [RecitationCache] and played from disk instead — see `_startPlayback`.
 class AudioController extends ChangeNotifier with WidgetsBindingObserver {
   AudioController({
     RecitationPlayer Function()? playerFactory,
     AudioProbeFn? probe,
+    RecitationCache? cache,
   }) : _player = (playerFactory ?? AudioPlayersRecitationPlayer.new)(),
-       _probe = probe ?? probeAudioUrl {
+       _probe = probe ?? probeAudioUrl,
+       _cache = cache ?? HttpRecitationCache() {
     _bind();
     WidgetsBinding.instance.addObserver(this);
   }
 
   late final RecitationPlayer _player;
   final AudioProbeFn _probe;
+
+  /// Where a recording is stored when the platform player cannot stream it.
+  final RecitationCache _cache;
+
+  /// The cache the player reads and writes.
+  ///
+  /// Exposed so the downloads manager operates on exactly the folder the
+  /// player looks in. A second instance would still share the directory, but
+  /// sharing the object keeps one lifetime and one HTTP client.
+  RecitationCache get cache => _cache;
   final List<StreamSubscription<dynamic>> _subscriptions =
       <StreamSubscription<dynamic>>[];
 
@@ -171,6 +209,31 @@ class AudioController extends ChangeNotifier with WidgetsBindingObserver {
   String _surahLabel = '';
   String get surahLabel => _surahLabel;
 
+  /// Whether the loaded track is a whole surah or a single ayah.
+  RecitationScope _scope = RecitationScope.surah;
+  RecitationScope get scope => _scope;
+
+  bool get isSurahScope => _scope == RecitationScope.surah;
+  bool get isAyahScope => _scope == RecitationScope.ayah;
+
+  /// 1-based ayah within [_surahNumber], or `null` when a whole surah is
+  /// loaded.
+  int? _ayahNumber;
+  int? get ayahNumber => _ayahNumber;
+
+  /// Ayahs in the loaded surah, so the queue knows where to stop.
+  int? _ayahCount;
+  int? get ayahCount => _ayahCount;
+
+  /// Global ayah index (`1..6236`) of ayah 1 of the loaded surah — the base
+  /// that turns "the next ayah" into a CDN file name.
+  int? _firstAyahGlobal;
+  int? get firstAyahGlobal => _firstAyahGlobal;
+
+  /// Whether the end of an ayah continues with the next one.
+  bool _continueThroughSurah = true;
+  bool get continueThroughSurah => _continueThroughSurah;
+
   QuranReciter _reciter = QuranReciters.defaultReciter;
   QuranReciter get reciter => _reciter;
 
@@ -182,6 +245,17 @@ class AudioController extends ChangeNotifier with WidgetsBindingObserver {
 
   String? _error;
   String? get error => _error;
+
+  /// Fraction (`0..1`) of a download fallback in flight, or `null` when no
+  /// download is running.
+  ///
+  /// Long surahs are large — Al-Baqarah is ~116 MB — so the UI shows real
+  /// progress instead of an indeterminate spinner that looks like a hang.
+  double? _downloadProgress;
+  double? get downloadProgress => _downloadProgress;
+
+  /// True while the recording is being fetched to disk.
+  bool get isDownloading => _downloadProgress != null;
 
   double _speed = 1.0;
   double get speed => _speed;
@@ -239,21 +313,27 @@ class AudioController extends ChangeNotifier with WidgetsBindingObserver {
             // stop(); keep the terminal state in that case. Never downgrade an
             // error either — `_fail` stops the player, and that stop emits a
             // `paused` event which would otherwise wipe the error the user is
-            // meant to be reading.
+            // meant to be reading. An `idle` status means the track was
+            // dismissed, so a late event must not resurrect it.
             if (_status != RecitationStatus.loading &&
-                _status != RecitationStatus.error) {
+                _status != RecitationStatus.error &&
+                _status != RecitationStatus.idle) {
               _status = RecitationStatus.paused;
             }
           case ap.PlayerState.stopped:
             if (_status != RecitationStatus.loading &&
                 _status != RecitationStatus.completed &&
-                _status != RecitationStatus.error) {
+                _status != RecitationStatus.error &&
+                _status != RecitationStatus.idle) {
               _status = RecitationStatus.paused;
             }
             _position = Duration.zero;
           case ap.PlayerState.completed:
-            _status = RecitationStatus.completed;
             _position = _duration;
+            // An ayah with a successor is handed over to `_advanceAyah`, which
+            // owns the transition; flipping to `completed` here would flash
+            // "finished" between two consecutive ayahs.
+            if (!_autoAdvance) _status = RecitationStatus.completed;
           case ap.PlayerState.disposed:
             break;
         }
@@ -274,8 +354,14 @@ class AudioController extends ChangeNotifier with WidgetsBindingObserver {
     );
     _subscriptions.add(
       _player.onComplete.listen((_) {
-        _status = RecitationStatus.completed;
         _position = _duration;
+        if (_autoAdvance) {
+          // Fire and forget: the advance is a whole load (probe + prepare) and
+          // the stream listener must stay responsive to the platform.
+          unawaited(_advanceAyah());
+          return;
+        }
+        _status = RecitationStatus.completed;
         notifyListeners();
       }),
     );
@@ -296,6 +382,18 @@ class AudioController extends ChangeNotifier with WidgetsBindingObserver {
 
   // ------------------------------------------------------------ commands ---
 
+  /// True when the track that just ended is an ayah that has a successor in
+  /// the same surah and the user asked to continue through the surah.
+  bool get _autoAdvance {
+    final ayah = _ayahNumber;
+    final count = _ayahCount;
+    return _scope == RecitationScope.ayah &&
+        _continueThroughSurah &&
+        ayah != null &&
+        count != null &&
+        ayah < count;
+  }
+
   /// Starts (or restarts) the given surah with the given reciter.
   ///
   /// Changing the reciter while the same surah is loaded reloads it from the
@@ -305,9 +403,67 @@ class AudioController extends ChangeNotifier with WidgetsBindingObserver {
     required int surahNumber,
     required String surahLabel,
     required QuranReciter reciter,
+  }) => _load(
+    url: reciter.surahAudioUrl(surahNumber),
+    scope: RecitationScope.surah,
+    surahNumber: surahNumber,
+    surahLabel: surahLabel,
+    reciter: reciter,
+  );
+
+  /// Starts one ayah, then continues through the rest of the surah unless
+  /// [continueThroughSurah] is `false`.
+  ///
+  /// [ayahNumber] is the ayah's position *inside its surah* (what the reader
+  /// shows). [firstAyahGlobal] is the global index of that surah's first ayah
+  /// — `QuranData.firstAyahGlobalNumber` — because that is the numbering the
+  /// CDN file name uses. Passing the base, rather than a pre-computed index,
+  /// lets the controller walk to the following ayahs without holding a copy of
+  /// the Qur'an.
+  Future<void> playAyah({
+    required int surahNumber,
+    required String surahLabel,
+    required int ayahNumber,
+    required int ayahCount,
+    required int firstAyahGlobal,
+    required QuranReciter reciter,
+    bool continueThroughSurah = true,
+  }) {
+    final ayah = ayahNumber.clamp(1, ayahCount < 1 ? 1 : ayahCount);
+    return _load(
+      url: reciter.ayahAudioUrl(firstAyahGlobal + ayah - 1),
+      scope: RecitationScope.ayah,
+      surahNumber: surahNumber,
+      surahLabel: surahLabel,
+      reciter: reciter,
+      ayahNumber: ayah,
+      ayahCount: ayahCount,
+      firstAyahGlobal: firstAyahGlobal,
+      continueThroughSurah: continueThroughSurah,
+    );
+  }
+
+  /// The single load path shared by [playSurah] and [playAyah].
+  ///
+  /// "Same track" is keyed on the scope, the surah, the ayah *and* the
+  /// reciter, so switching from a surah to an ayah of that same surah is a
+  /// real load rather than being mistaken for a resume.
+  Future<void> _load({
+    required String url,
+    required RecitationScope scope,
+    required int surahNumber,
+    required String surahLabel,
+    required QuranReciter reciter,
+    int? ayahNumber,
+    int? ayahCount,
+    int? firstAyahGlobal,
+    bool continueThroughSurah = true,
   }) async {
     final sameTrack =
-        _surahNumber == surahNumber && _reciter.id == reciter.id;
+        _scope == scope &&
+        _surahNumber == surahNumber &&
+        _ayahNumber == ayahNumber &&
+        _reciter.id == reciter.id;
 
     if (sameTrack && _status == RecitationStatus.paused) {
       await resume();
@@ -326,17 +482,20 @@ class AudioController extends ChangeNotifier with WidgetsBindingObserver {
       await _quietly(_player.stop);
     }
 
+    _scope = scope;
     _surahNumber = surahNumber;
     _surahLabel = surahLabel;
     _reciter = reciter;
+    _ayahNumber = ayahNumber;
+    _ayahCount = ayahCount;
+    _firstAyahGlobal = firstAyahGlobal;
+    _continueThroughSurah = continueThroughSurah;
     _position = Duration.zero;
     _duration = Duration.zero;
     _error = null;
     _failedReciter = null;
     _status = RecitationStatus.loading;
     notifyListeners();
-
-    final url = reciter.surahAudioUrl(surahNumber);
 
     // Pre-flight, so an edition the CDN genuinely does not serve fails in ~1s
     // with an accurate message instead of hanging on the player's 30s prepare
@@ -362,17 +521,13 @@ class AudioController extends ChangeNotifier with WidgetsBindingObserver {
     if (token != _loadToken) return;
 
     _playerToken = token;
-    try {
-      await _player.playUrl(url);
-    } catch (e) {
-      // A transport failure the probe also saw is a network problem, not a
-      // broken recording, so report it that way.
-      await _fail(
-        probe == AudioProbe.offline ? const _ProbeFailure('network') : e,
-        reciter: reciter,
-      );
-      return;
-    }
+    final started = await _startPlayback(
+      url,
+      probe: probe,
+      reciter: reciter,
+      token: token,
+    );
+    if (!started) return;
 
     if (token != _loadToken) {
       // Cancelled while the platform was preparing. Only tear the player down
@@ -387,14 +542,211 @@ class AudioController extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  /// Retries whatever failed, keeping the reciter that was selected.
-  Future<void> retry() async {
+  /// Plays the next ayah of the loaded surah, or finishes when it is the last.
+  Future<void> _advanceAyah() async {
+    final current = _ayahNumber;
+    final count = _ayahCount;
+    final first = _firstAyahGlobal;
+    final surah = _surahNumber;
+    if (current == null ||
+        count == null ||
+        first == null ||
+        surah == null ||
+        current >= count) {
+      _status = RecitationStatus.completed;
+      notifyListeners();
+      return;
+    }
+    final next = current + 1;
+    await _load(
+      url: _reciter.ayahAudioUrl(first + next - 1),
+      scope: RecitationScope.ayah,
+      surahNumber: surah,
+      surahLabel: _surahLabel,
+      reciter: _reciter,
+      ayahNumber: next,
+      ayahCount: count,
+      firstAyahGlobal: first,
+      continueThroughSurah: _continueThroughSurah,
+    );
+  }
+
+  /// Starts [url], falling back to a local copy when the platform cannot open
+  /// the remote stream. Returns `false` when the load failed.
+  Future<bool> _startPlayback(
+    String url, {
+    required AudioProbe probe,
+    required QuranReciter reciter,
+    required int token,
+  }) async {
+    // A recording that is already on disk is always preferable: it starts
+    // instantly, seeks reliably and works offline. A cache that cannot be read
+    // must never block playback, so a failure here just means "not cached".
+    File? cached;
+    try {
+      cached = await _cache.lookup(url);
+    } catch (_) {
+      cached = null;
+    }
+    if (token != _loadToken) return false;
+    if (cached != null) {
+      try {
+        await _player.playFile(cached.path);
+        return true;
+      } catch (_) {
+        // A corrupt cache entry must never be fatal — fall through to the
+        // stream and let the download path replace it.
+      }
+      if (token != _loadToken) return false;
+    }
+
+    try {
+      await _player.playUrl(url);
+      return true;
+    } catch (streamError) {
+      if (token != _loadToken) return false;
+      // The platform media stack refused the remote URL. That is a platform
+      // limitation rather than a dead recording: `audioplayers` on Windows
+      // hands the URL to Media Foundation's `IMFSourceResolver`, which resolves
+      // it through WinINet and fails with `ERROR_INTERNET_NAME_NOT_RESOLVED`
+      // (0x80072EE7) even while an ordinary HTTP request from Dart reaches the
+      // very same URL. Fetching the bytes ourselves and playing the local file
+      // sidesteps the OS media stack completely.
+      return _playDownloaded(
+        url,
+        streamError,
+        probe: probe,
+        reciter: reciter,
+        token: token,
+      );
+    }
+  }
+
+  /// Downloads [url] to disk and plays it. Returns `false` on failure.
+  Future<bool> _playDownloaded(
+    String url,
+    Object streamError, {
+    required AudioProbe probe,
+    required QuranReciter reciter,
+    required int token,
+  }) async {
+    _downloadProgress = 0;
+    notifyListeners();
+
+    final File file;
+    try {
+      file = await _cache.fetch(
+        url,
+        onProgress: (progress) {
+          if (token != _loadToken) return;
+          _downloadProgress = progress.fraction;
+          notifyListeners();
+        },
+      );
+    } catch (downloadError) {
+      _downloadProgress = null;
+      // The probe is authoritative when it could not reach the CDN either — the
+      // cause is then unambiguously the network. Otherwise report whichever
+      // failure is more specific: a real download error beats the platform's
+      // own message, which only ever says the OS media stack refused the source.
+      await _fail(
+        probe == AudioProbe.offline
+            ? const _ProbeFailure('network')
+            : (downloadError is RecitationDownloadException
+                  ? downloadError
+                  : streamError),
+        reciter: reciter,
+      );
+      return false;
+    }
+
+    // A cancelled load already cleared the flag through [stop].
+    if (token != _loadToken) return false;
+    _downloadProgress = null;
+    _playerToken = token;
+
+    try {
+      await _player.playFile(file.path);
+      return true;
+    } catch (e) {
+      // The file is on disk but the device still refused it — a codec or audio
+      // device problem, not a network one.
+      await _fail(e, reciter: reciter);
+      return false;
+    }
+  }
+
+  /// Turns "continue with the next ayah" on or off without restarting the ayah
+  /// that is playing right now — the switch in the listen sheet must take
+  /// effect at the *end* of the current ayah, not by reloading it.
+  void setContinueThroughSurah(bool value) {
+    if (_continueThroughSurah == value) return;
+    _continueThroughSurah = value;
+    notifyListeners();
+  }
+
+  /// Re-loads whatever is currently loaded with a different reciter.
+  ///
+  /// Used by the reciter picker: with a track loaded, changing the voice must
+  /// be audible immediately, and it must keep the *exact* track — a listener
+  /// who picked ayah 255 of Al-Baqarah should hear that ayah from the new
+  /// reciter, not the surah from the beginning.
+  Future<void> reloadWith(QuranReciter reciter) async {
     final surah = _surahNumber;
     if (surah == null) return;
+    final ayah = _ayahNumber;
+    final count = _ayahCount;
+    final first = _firstAyahGlobal;
+    if (_scope == RecitationScope.ayah &&
+        ayah != null &&
+        count != null &&
+        first != null) {
+      await playAyah(
+        surahNumber: surah,
+        surahLabel: _surahLabel,
+        ayahNumber: ayah,
+        ayahCount: count,
+        firstAyahGlobal: first,
+        reciter: reciter,
+        continueThroughSurah: _continueThroughSurah,
+      );
+      return;
+    }
     await playSurah(
       surahNumber: surah,
       surahLabel: _surahLabel,
-      reciter: _failedReciter ?? _reciter,
+      reciter: reciter,
+    );
+  }
+
+  /// Retries whatever failed, keeping the reciter that was selected and the
+  /// exact track (surah or ayah) that failed.
+  Future<void> retry() async {
+    final surah = _surahNumber;
+    if (surah == null) return;
+    final reciter = _failedReciter ?? _reciter;
+    final ayah = _ayahNumber;
+    final count = _ayahCount;
+    final first = _firstAyahGlobal;
+    if (_scope == RecitationScope.ayah &&
+        ayah != null &&
+        count != null &&
+        first != null) {
+      await playAyah(
+        surahNumber: surah,
+        surahLabel: _surahLabel,
+        ayahNumber: ayah,
+        ayahCount: count,
+        firstAyahGlobal: first,
+        reciter: reciter,
+        continueThroughSurah: _continueThroughSurah,
+      );
+      return;
+    }
+    await playSurah(
+      surahNumber: surah,
+      surahLabel: _surahLabel,
+      reciter: reciter,
     );
   }
 
@@ -445,6 +797,9 @@ class AudioController extends ChangeNotifier with WidgetsBindingObserver {
     // Abandon any load that is still in flight: a prepare that lands after the
     // user stopped must not start playing.
     _loadToken++;
+    // A download fallback in flight is abandoned with it. The transfer itself
+    // is not cancellable, but its progress must stop driving the UI.
+    _downloadProgress = null;
     try {
       await _player.stop();
     } catch (e) {
@@ -455,6 +810,35 @@ class AudioController extends ChangeNotifier with WidgetsBindingObserver {
         ? RecitationStatus.idle
         : RecitationStatus.paused;
     _position = Duration.zero;
+    notifyListeners();
+  }
+
+  /// Stops playback and forgets the loaded track, so the UI can go back to its
+  /// "nothing is loaded" state.
+  ///
+  /// This is what the now-playing strip's close button does: [stop] keeps the
+  /// track so it can be resumed, which would leave a player strip on screen
+  /// forever after the first listen.
+  Future<void> dismiss() async {
+    _loadToken++;
+    _downloadProgress = null;
+    try {
+      await _player.stop();
+    } catch (_) {
+      // The track is being discarded anyway; the reset below is the point.
+    }
+    _status = RecitationStatus.idle;
+    _scope = RecitationScope.surah;
+    _surahNumber = null;
+    _surahLabel = '';
+    _ayahNumber = null;
+    _ayahCount = null;
+    _firstAyahGlobal = null;
+    _continueThroughSurah = true;
+    _position = Duration.zero;
+    _duration = Duration.zero;
+    _error = null;
+    _failedReciter = null;
     notifyListeners();
   }
 
@@ -508,17 +892,24 @@ class AudioController extends ChangeNotifier with WidgetsBindingObserver {
     _error = _describe(error);
     _failedReciter = reciter ?? _failedReciter ?? _reciter;
     _status = RecitationStatus.error;
+    _downloadProgress = null;
     // Drop the broken stream so a retry starts from a clean player.
-    try {
-      await _player.stop();
-    } catch (_) {
-      // Nothing useful to do — the player is already unusable.
-    }
+    //
+    // `stop()` alone is not enough on Windows: `audioplayers_windows` remembers
+    // the last URL it was handed and short-circuits a repeat of that same URL to
+    // a bare "prepared" event without loading anything, so retrying a failed
+    // stream would report success and then play silence. `release()` clears the
+    // cached URL and forces a real re-resolve.
+    await _quietly(_player.stop);
+    await _quietly(_player.release);
     notifyListeners();
   }
 
   static String _describe(Object error) {
     if (error is _ProbeFailure) return error.reason;
+    // Failing to fetch the file ourselves is a download problem whatever the
+    // platform player said about the stream.
+    if (error is RecitationDownloadException) return 'download';
     final text = error.toString();
     // `audioplayers` surfaces a dead URL as "Stream closed before it got
     // prepared" or a prepare timeout — neither mentions the HTTP status, so
@@ -536,7 +927,9 @@ class AudioController extends ChangeNotifier with WidgetsBindingObserver {
     if (text.contains('SocketException') ||
         text.contains('Connection') ||
         text.contains('UnknownHost') ||
-        text.contains('Failed host lookup')) {
+        text.contains('Failed host lookup') ||
+        text.contains('WindowsAudioError') ||
+        text.contains('80072EE7')) {
       return 'network';
     }
     return 'playback';

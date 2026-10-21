@@ -78,11 +78,7 @@ class _QuranScreenState extends State<QuranScreen>
               final surah = quran.hasReadingHistory
                   ? (quran.lastSurah ?? data.surah(1))
                   : data.surah(1);
-              showRecitationSheet(
-                context,
-                surahNumber: surah.number,
-                surahLabel: surah.arabicName,
-              );
+              showListenSheet(context, surah: surah);
             },
           ),
           ZadIconButton(
@@ -380,14 +376,14 @@ class _ContinueCard extends StatelessWidget {
                         ? l10n.t('quran.continueFrom')
                         : l10n.t('home.startReading'),
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: const Color(0xFF9FC0B1),
+                      color: tokens.heroMuted,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${l10n.t('quran.surahPrefix')} ${surah?.arabicName ?? ''}',
                     style: theme.textTheme.titleLarge?.copyWith(
-                      color: Colors.white,
+                      color: tokens.heroOn,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -395,7 +391,7 @@ class _ContinueCard extends StatelessWidget {
                     '${l10n.t('quran.juzNumber', args: {'n': l10n.n(juz)})} • '
                     '${l10n.t('quran.pageShort', args: {'n': l10n.n(page)})}',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: const Color(0xFFCFE0D7),
+                      color: tokens.heroMuted,
                     ),
                   ),
                 ],
@@ -415,8 +411,8 @@ class _ContinueCard extends StatelessWidget {
                 }
               },
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFEDBF7A),
-                foregroundColor: const Color(0xFF2B1F05),
+                backgroundColor: tokens.heroGold,
+                foregroundColor: tokens.heroGoldInk,
                 minimumSize: const Size(0, 44),
                 padding: const EdgeInsets.symmetric(horizontal: 14),
               ),
@@ -634,6 +630,7 @@ class _SurahRow extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final quran = context.watch<QuranController>();
+    final hasBookmark = quran.bookmarks.any((b) => b.surah == surah.number);
 
     return ZadCard(
       padding: const EdgeInsets.symmetric(
@@ -670,6 +667,20 @@ class _SurahRow extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // A state indicator, not a button: the row's own tap opens
+                    // the surah, and the app bar owns the jump to the bookmarks
+                    // list. (This used to be an IconButton styled like a
+                    // bookmark toggle that merely navigated away — a false
+                    // affordance.)
+                    if (hasBookmark) ...<Widget>[
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.bookmark,
+                        size: 15,
+                        color: context.tokens.gold,
+                        semanticLabel: l10n.t('quran.bookmarked'),
+                      ),
+                    ],
                     const SizedBox(width: 6),
                     ZadBadge(
                       label: surah.isMeccan
@@ -687,29 +698,6 @@ class _SurahRow extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: ZadSpacing.sm),
-          Column(
-            children: <Widget>[
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                onPressed: () => QuranNavigation.openBookmarks(context),
-                icon: Icon(
-                  quran.bookmarks.any((b) => b.surah == surah.number)
-                      ? Icons.bookmark
-                      : Icons.bookmark_border_rounded,
-                  size: 18,
-                  color: quran.bookmarks.any((b) => b.surah == surah.number)
-                      ? context.tokens.gold
-                      : scheme.onSurfaceVariant,
-                ),
-                tooltip: l10n.t('quran.bookmarks'),
-              ),
-              Text(
-                l10n.n(surah.startPage),
-                style: theme.textTheme.labelSmall,
-              ),
-            ],
           ),
         ],
       ),

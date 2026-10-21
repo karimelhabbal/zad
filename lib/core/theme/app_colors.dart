@@ -87,6 +87,11 @@ class ZadTokens extends ThemeExtension<ZadTokens> {
     required this.navigationFill,
     required this.heroGradient,
     required this.parchment,
+    required this.heroOn,
+    required this.heroMuted,
+    required this.heroGold,
+    required this.heroGoldInk,
+    required this.heroTrack,
   });
 
   final Color gold;
@@ -97,6 +102,26 @@ class ZadTokens extends ThemeExtension<ZadTokens> {
   final List<Color> heroGradient;
   final Color parchment;
 
+  /// Ink on the emerald hero card.
+  ///
+  /// The hero gradient is dark in **both** themes (it is the app's ceremonial
+  /// surface), so these are deliberately not derived from `colorScheme` — a
+  /// screen must never guess them with a raw hex literal either, which is why
+  /// they live here.
+  final Color heroOn;
+
+  /// Secondary ink on the hero: labels, captions, inactive milestones.
+  final Color heroMuted;
+
+  /// Gold accent on the hero: borders, icons, the countdown label.
+  final Color heroGold;
+
+  /// Text placed on a [heroGold] fill (the permission CTA).
+  final Color heroGoldInk;
+
+  /// Unfilled part of a progress bar on the hero.
+  final Color heroTrack;
+
   static const ZadTokens light = ZadTokens(
     gold: ZadPalette.goldLight,
     goldSoft: Color(0x33C99E5C),
@@ -105,6 +130,11 @@ class ZadTokens extends ThemeExtension<ZadTokens> {
     navigationFill: Color(0xEBFBF9F4),
     heroGradient: [Color(0xFF134E3A), Color(0xFF0B3529)],
     parchment: Color(0xFFFBF9F4),
+    heroOn: Color(0xFFFFFFFF),
+    heroMuted: Color(0xFF9FC0B1),
+    heroGold: Color(0xFFEDBF7A),
+    heroGoldInk: Color(0xFF2B1F05),
+    heroTrack: Color(0x33FFFFFF),
   );
 
   static const ZadTokens dark = ZadTokens(
@@ -115,6 +145,11 @@ class ZadTokens extends ThemeExtension<ZadTokens> {
     navigationFill: Color(0xEB12241E),
     heroGradient: [Color(0xFF16382C), Color(0xFF0B1914)],
     parchment: Color(0xFF0B1914),
+    heroOn: Color(0xFFFFFFFF),
+    heroMuted: Color(0xFF9FC0B1),
+    heroGold: Color(0xFFEDBF7A),
+    heroGoldInk: Color(0xFF2B1F05),
+    heroTrack: Color(0x33FFFFFF),
   );
 
   @override
@@ -126,6 +161,11 @@ class ZadTokens extends ThemeExtension<ZadTokens> {
     Color? navigationFill,
     List<Color>? heroGradient,
     Color? parchment,
+    Color? heroOn,
+    Color? heroMuted,
+    Color? heroGold,
+    Color? heroGoldInk,
+    Color? heroTrack,
   }) {
     return ZadTokens(
       gold: gold ?? this.gold,
@@ -135,6 +175,11 @@ class ZadTokens extends ThemeExtension<ZadTokens> {
       navigationFill: navigationFill ?? this.navigationFill,
       heroGradient: heroGradient ?? this.heroGradient,
       parchment: parchment ?? this.parchment,
+      heroOn: heroOn ?? this.heroOn,
+      heroMuted: heroMuted ?? this.heroMuted,
+      heroGold: heroGold ?? this.heroGold,
+      heroGoldInk: heroGoldInk ?? this.heroGoldInk,
+      heroTrack: heroTrack ?? this.heroTrack,
     );
   }
 
@@ -152,6 +197,11 @@ class ZadTokens extends ThemeExtension<ZadTokens> {
         Color.lerp(heroGradient.last, other.heroGradient.last, t)!,
       ],
       parchment: Color.lerp(parchment, other.parchment, t)!,
+      heroOn: Color.lerp(heroOn, other.heroOn, t)!,
+      heroMuted: Color.lerp(heroMuted, other.heroMuted, t)!,
+      heroGold: Color.lerp(heroGold, other.heroGold, t)!,
+      heroGoldInk: Color.lerp(heroGoldInk, other.heroGoldInk, t)!,
+      heroTrack: Color.lerp(heroTrack, other.heroTrack, t)!,
     );
   }
 }

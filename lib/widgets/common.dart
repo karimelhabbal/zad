@@ -451,11 +451,18 @@ class ZadBadge extends StatelessWidget {
     required this.label,
     this.icon,
     this.color,
+    this.foreground,
   });
 
   final String label;
   final IconData? icon;
   final Color? color;
+
+  /// Colour for the label. Defaults to the scheme's muted text, which is right
+  /// on a card. Pass an explicit colour when the badge sits on a coloured
+  /// surface (e.g. the emerald prayer hero) — the default would be unreadable
+  /// there because it is derived from the *page* background, not this one.
+  final Color? foreground;
 
   @override
   Widget build(BuildContext context) {
@@ -478,7 +485,7 @@ class ZadBadge extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
+              color: foreground ?? scheme.onSurfaceVariant,
             ),
           ),
         ],

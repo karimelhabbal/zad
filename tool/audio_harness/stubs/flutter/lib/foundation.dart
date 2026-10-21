@@ -31,3 +31,9 @@ class ChangeNotifier {
 void debugPrint(String? message) => print(message);
 
 bool get kIsWeb => false;
+
+class _VisibleForTesting {
+  const _VisibleForTesting();
+}
+
+const visibleForTesting = _VisibleForTesting();

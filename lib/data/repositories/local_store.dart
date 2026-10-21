@@ -16,13 +16,18 @@ class LocalStore {
   static const String keySettings = 'zad.settings.v1';
   static const String keyReadingPosition = 'zad.quran.position.v1';
   static const String keyBookmarks = 'zad.quran.bookmarks.v1';
+
+  /// Distinct Mushaf pages opened today (`{d: yyyy-mm-dd, p: [page, ...]}`).
+  static const String keyPagesToday = 'zad.quran.pagesToday.v1';
   static const String keyCustomDhikr = 'zad.tasbeeh.custom.v1';
   static const String keyTasbeehCounters = 'zad.tasbeeh.counters.v1';
   static const String keyActiveDhikr = 'zad.tasbeeh.active.v1';
   static const String keyAzkarProgress = 'zad.azkar.progress.v1';
   static const String keyTasbeehStats = 'zad.tasbeeh.stats.v1';
   static const String keyTasbeehTargets = 'zad.tasbeeh.targets.v1';
-  static const String keySplashSeen = 'zad.splash.seen.v1';
+
+  /// Whether the first-run tour has been completed (or skipped) once.
+  static const String keyOnboardingSeen = 'zad.onboarding.seen.v1';
 
   /// Selected Qur'an reciter for audio playback (a `QuranReciters` id).
   static const String keyAudioReciter = 'zad.audio.reciter.v1';
@@ -91,13 +96,14 @@ class LocalStore {
     keySettings,
     keyReadingPosition,
     keyBookmarks,
+    keyPagesToday,
     keyCustomDhikr,
     keyTasbeehCounters,
     keyActiveDhikr,
     keyAzkarProgress,
     keyTasbeehStats,
     keyTasbeehTargets,
-    keySplashSeen,
+    keyOnboardingSeen,
     keyAudioReciter,
   ];
 

@@ -36,6 +36,11 @@ class QuranController extends ChangeNotifier {
   List<QuranBookmark> _bookmarks = const <QuranBookmark>[];
   List<QuranBookmark> get bookmarks => _bookmarks;
 
+  /// Distinct Mushaf pages opened today. Drives the home dashboard's daily
+  /// figure, which is a real count rather than "the page I am on".
+  Set<int> _pagesToday = <int>{};
+  int get pagesToday => _pagesToday.length;
+
   Future<void> initialise() async {
     if (_state == LoadState.loading) return;
     _state = LoadState.loading;
@@ -44,6 +49,7 @@ class QuranController extends ChangeNotifier {
       _data = await _repository.load();
       _position = _repository.loadPosition();
       _bookmarks = _repository.loadBookmarks();
+      _pagesToday = _repository.loadPagesToday();
       _state = LoadState.ready;
     } catch (e) {
       _error = e.toString();
@@ -56,6 +62,7 @@ class QuranController extends ChangeNotifier {
   void reloadPersisted() {
     _position = _repository.loadPosition();
     _bookmarks = _repository.loadBookmarks();
+    _pagesToday = _repository.loadPagesToday();
     notifyListeners();
   }
 
@@ -81,6 +88,13 @@ class QuranController extends ChangeNotifier {
     _position = next;
     notifyListeners();
     await _repository.savePosition(next);
+    // Record the visit for today's counter. Only notify when the day's set
+    // actually grew, so paging back and forth does not repaint the dashboard.
+    final pages = await _repository.recordPageRead(page);
+    if (pages.length != _pagesToday.length) {
+      _pagesToday = pages;
+      notifyListeners();
+    }
   }
 
   bool get hasReadingHistory => _position.updatedAt.millisecondsSinceEpoch > 0;

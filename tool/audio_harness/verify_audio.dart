@@ -20,10 +20,13 @@
 library;
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart' as ap;
 import 'package:flutter/widgets.dart' show AppLifecycleState;
+import 'package:zad/data/models/quran_models.dart';
 import 'package:zad/data/models/reciter.dart';
+import 'package:zad/data/repositories/recitation_cache.dart';
 import 'package:zad/state/audio_controller.dart';
 
 int _passed = 0;
@@ -84,6 +87,7 @@ class FakePlayer implements RecitationPlayer {
   final StreamController<String> _logs = StreamController<String>.broadcast();
 
   final List<String> playedUrls = <String>[];
+  final List<String> playedFiles = <String>[];
   final List<Duration> seeks = <Duration>[];
   final List<double> rates = <double>[];
   int resumeCount = 0;
@@ -91,7 +95,12 @@ class FakePlayer implements RecitationPlayer {
   int stopCount = 0;
   int releaseCount = 0;
   int disposeCount = 0;
+
+  /// When set, every command throws it.
   Object? failWith;
+
+  /// When set, only `playUrl` throws it while `playFile` still succeeds.
+  Object? failRemoteWith;
 
   /// Simulates a slow platform prepare.
   Duration playDelay = Duration.zero;
@@ -102,6 +111,11 @@ class FakePlayer implements RecitationPlayer {
 
   void _guard() {
     final failure = failWith;
+    if (failure != null) throw failure;
+  }
+
+  void _guardRemote() {
+    final failure = failRemoteWith ?? failWith;
     if (failure != null) throw failure;
   }
 
@@ -118,8 +132,18 @@ class FakePlayer implements RecitationPlayer {
 
   @override
   Future<void> playUrl(String url) async {
-    _guard();
+    _guardRemote();
     playedUrls.add(url);
+    if (playDelay > Duration.zero) {
+      await Future<void>.delayed(playDelay);
+    }
+    _states.add(ap.PlayerState.playing);
+  }
+
+  @override
+  Future<void> playFile(String path) async {
+    _guard();
+    playedFiles.add(path);
     if (playDelay > Duration.zero) {
       await Future<void>.delayed(playDelay);
     }
@@ -165,6 +189,50 @@ class FakePlayer implements RecitationPlayer {
   Future<void> dispose() async => disposeCount++;
 }
 
+/// In-memory [RecitationCache] for the harness.
+class FakeCache implements RecitationCache {
+  /// Returned by [lookup] — set it to simulate an already-downloaded surah.
+  File? cached;
+
+  /// When set, [fetch] throws it.
+  Object? failWith;
+
+  /// Simulates a slow download.
+  Duration fetchDelay = Duration.zero;
+
+  /// Recorded URLs passed to [fetch].
+  final List<String> fetched = <String>[];
+
+  @override
+  Future<File?> lookup(String url) async => cached;
+
+  @override
+  Future<File> fetch(
+    String url, {
+    void Function(RecitationDownload progress)? onProgress,
+  }) async {
+    fetched.add(url);
+    onProgress?.call(const RecitationDownload(received: 50, total: 100));
+    if (fetchDelay > Duration.zero) await Future<void>.delayed(fetchDelay);
+    final failure = failWith;
+    if (failure != null) throw failure;
+    cached = File('harness-recitation.mp3');
+    return cached!;
+  }
+
+  @override
+  Future<int?> sizeOf(String url) async => null;
+
+  @override
+  Future<void> remove(String url) async {}
+
+  @override
+  Future<void> clear() async {}
+
+  @override
+  Future<int> sizeBytes() async => 0;
+}
+
 /// Builds a controller wired to the *real* adapter (so the real
 /// `AudioPlayersRecitationPlayer` + the stub platform player are exercised).
 AudioController realAdapter({AudioProbeFn? probe}) {
@@ -172,10 +240,11 @@ AudioController realAdapter({AudioProbeFn? probe}) {
   return AudioController(probe: probe ?? (_) async => AudioProbe.ok);
 }
 
-AudioController fakeBacked(FakePlayer player, {AudioProbeFn? probe}) =>
+AudioController fakeBacked(FakePlayer player, {AudioProbeFn? probe, RecitationCache? cache}) =>
     AudioController(
       playerFactory: () => player,
       probe: probe ?? (_) async => AudioProbe.ok,
+      cache: cache,
     );
 
 Future<void> main() async {
@@ -590,6 +659,90 @@ Future<void> main() async {
     );
   });
 
+  // ------------------------------------------ download fallback (Windows) --
+  await t('uses a cached file directly when the stream fails', () async {
+    final player = FakePlayer()..failRemoteWith = Exception('WindowsAudioError');
+    final cache = FakeCache()..cached = File('cached.mp3');
+    final c = fakeBacked(player, cache: cache);
+    addTearDown(c.dispose);
+    await c.playSurah(surahNumber: 1, surahLabel: 'الفاتحة', reciter: alafasy);
+    eq(player.playedFiles.single, 'cached.mp3', 'played from cache');
+    eq(c.status, RecitationStatus.playing, 'playing');
+  });
+
+  await t('downloads and plays when the stream fails and nothing is cached',
+      () async {
+    final player = FakePlayer()..failRemoteWith = Exception('WindowsAudioError');
+    final cache = FakeCache();
+    final c = fakeBacked(player, cache: cache);
+    addTearDown(c.dispose);
+    await c.playSurah(surahNumber: 1, surahLabel: 'الفاتحة', reciter: alafasy);
+    check(cache.fetched.isNotEmpty, 'fetch was called');
+    check(player.playedFiles.isNotEmpty, 'played from downloaded file');
+    eq(c.status, RecitationStatus.playing, 'playing');
+  });
+
+  await t('reports download progress while fetching', () async {
+    final player = FakePlayer()..failRemoteWith = Exception('WindowsAudioError');
+    final cache = FakeCache()..fetchDelay = const Duration(milliseconds: 20);
+    final c = fakeBacked(player, cache: cache);
+    addTearDown(c.dispose);
+    final progressValues = <double?>[];
+    c.addListener(() => progressValues.add(c.downloadProgress));
+    await c.playSurah(surahNumber: 1, surahLabel: 'الفاتحة', reciter: alafasy);
+    check(progressValues.any((p) => p != null && p > 0), 'progress reported');
+    eq(c.downloadProgress, null, 'progress cleared after success');
+  });
+
+  await t('a failed download reports a download error', () async {
+    final player = FakePlayer()..failRemoteWith = Exception('WindowsAudioError');
+    final cache = FakeCache()..failWith = RecitationDownloadException('HTTP 500');
+    final c = fakeBacked(player, cache: cache);
+    addTearDown(c.dispose);
+    await c.playSurah(surahNumber: 1, surahLabel: 'الفاتحة', reciter: alafasy);
+    eq(c.status, RecitationStatus.error, 'status');
+    eq(c.error, 'download', 'error code');
+    eq(c.downloadProgress, null, 'progress cleared');
+  });
+
+  await t('a failed download on an unreachable CDN reports a network error',
+      () async {
+    final player = FakePlayer()..failRemoteWith = Exception('WindowsAudioError');
+    final cache = FakeCache()..failWith = RecitationDownloadException('SocketException');
+    final c = fakeBacked(player, probe: (_) async => AudioProbe.offline, cache: cache);
+    addTearDown(c.dispose);
+    await c.playSurah(surahNumber: 1, surahLabel: 'الفاتحة', reciter: alafasy);
+    eq(c.error, 'network', 'error code');
+  });
+
+  await t('a local file the device still refuses reports a playback error',
+      () async {
+    final player = FakePlayer()
+      ..failRemoteWith = Exception('WindowsAudioError')
+      ..failWith = Exception('weird decoder explosion');
+    final cache = FakeCache();
+    final c = fakeBacked(player, cache: cache);
+    addTearDown(c.dispose);
+    await c.playSurah(surahNumber: 1, surahLabel: 'الفاتحة', reciter: alafasy);
+    eq(c.error, 'playback', 'error code');
+  });
+
+  await t('cancelling during a download clears the progress state', () async {
+    final player = FakePlayer()..failRemoteWith = Exception('WindowsAudioError');
+    final cache = FakeCache()..fetchDelay = const Duration(milliseconds: 40);
+    final c = fakeBacked(player, cache: cache);
+    addTearDown(c.dispose);
+    final pending = c.playSurah(surahNumber: 1, surahLabel: 'الفاتحة', reciter: alafasy);
+    await settle();
+    check(c.isDownloading, 'downloading');
+    await c.stop();
+    eq(c.downloadProgress, null, 'progress cleared');
+    await pending;
+    await settle();
+    eq(c.isPlaying, false, 'must never start playing');
+    eq(c.downloadProgress, null, 'progress still null');
+  });
+
   // -------------------------------------------------- cancelling a load ----
   await t('cancelling a slow prepare stops the player instead of starting it',
       () async {
@@ -631,6 +784,281 @@ Future<void> main() async {
     await settle();
     eq(player.playedUrls, <String>[], 'no stream was started');
     eq(c.isPlaying, false, 'not playing');
+  });
+
+  // ---------------------------------------------------------- ayah scope ---
+  await t('the CDN paths are the verified ones', () async {
+    eq(
+      alafasy.surahAudioUrl(2),
+      'https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/2.mp3',
+      'surah url',
+    );
+    eq(
+      alafasy.ayahAudioUrl(262),
+      'https://cdn.islamic.network/quran/audio/128/ar.alafasy/262.mp3',
+      'ayah url',
+    );
+  });
+
+  await t('surah and ayah files never share a cache name', () async {
+    final surah = HttpRecitationCache.fileNameFor(
+      'https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/1.mp3',
+    );
+    final ayah = HttpRecitationCache.fileNameFor(
+      'https://cdn.islamic.network/quran/audio/128/ar.alafasy/1.mp3',
+    );
+    check(surah != ayah, 'distinct cache names ($surah vs $ayah)');
+    check(surah.contains('audio-surah'), 'surah name stays readable: $surah');
+    check(ayah.startsWith('audio__'), 'ayah name stays readable: $ayah');
+  });
+
+  await t('global ayah numbering matches the CDN', () async {
+    final data = _dataset(<int>[7, 286, 200]);
+    eq(data.globalAyahNumber(1, 1), 1, '1:1');
+    eq(data.globalAyahNumber(1, 7), 7, '1:7');
+    eq(data.globalAyahNumber(2, 1), 8, '2:1');
+    eq(data.globalAyahNumber(2, 255), 262, '2:255 (Ayat al-Kursi)');
+    // Al-Fatiha 7 + Al-Baqarah 286 = 293 ayahs before Al-Imran.
+    eq(data.globalAyahNumber(2, 286), 293, '2:286');
+    eq(data.firstAyahGlobalNumber(3), 294, '3:1');
+  });
+
+  await t('an ayah starts on its own CDN file', () async {
+    final player = FakePlayer();
+    final c = fakeBacked(player);
+    addTearDown(c.dispose);
+
+    await c.playAyah(
+      surahNumber: 2,
+      surahLabel: 'البقرة',
+      ayahNumber: 255,
+      ayahCount: 286,
+      firstAyahGlobal: 8,
+      reciter: alafasy,
+    );
+    await settle();
+
+    eq(c.isAyahScope, true, 'ayah scope');
+    eq(c.isSurahScope, false, 'not surah scope');
+    eq(c.ayahNumber, 255, 'ayah number');
+    eq(
+      player.playedUrls,
+      <String>['https://cdn.islamic.network/quran/audio/128/ar.alafasy/262.mp3'],
+      'exactly one ayah file',
+    );
+    eq(c.isPlaying, true, 'playing');
+  });
+
+  await t('an ayah hands over to the next ayah', () async {
+    final player = FakePlayer();
+    final c = fakeBacked(player);
+    addTearDown(c.dispose);
+
+    await c.playAyah(
+      surahNumber: 2,
+      surahLabel: 'البقرة',
+      ayahNumber: 255,
+      ayahCount: 286,
+      firstAyahGlobal: 8,
+      reciter: alafasy,
+    );
+    await settle();
+    player.emitComplete();
+    await settle();
+    await settle();
+
+    eq(c.ayahNumber, 256, 'advanced to the next ayah');
+    eq(player.playedUrls.length, 2, 'a second file was requested');
+    check(
+      player.playedUrls.last.endsWith('/audio/128/ar.alafasy/263.mp3'),
+      'next global ayah',
+    );
+    eq(c.isPlaying, true, 'still playing');
+  });
+
+  await t('the last ayah of a surah ends instead of wrapping', () async {
+    final player = FakePlayer();
+    final c = fakeBacked(player);
+    addTearDown(c.dispose);
+
+    await c.playAyah(
+      surahNumber: 1,
+      surahLabel: 'الفاتحة',
+      ayahNumber: 7,
+      ayahCount: 7,
+      firstAyahGlobal: 1,
+      reciter: alafasy,
+    );
+    await settle();
+    player.emitComplete();
+    await settle();
+    await settle();
+
+    eq(c.status, RecitationStatus.completed, 'completed');
+    eq(player.playedUrls.length, 1, 'nothing further requested');
+  });
+
+  await t('one ayah on its own stops at its end', () async {
+    final player = FakePlayer();
+    final c = fakeBacked(player);
+    addTearDown(c.dispose);
+
+    await c.playAyah(
+      surahNumber: 2,
+      surahLabel: 'البقرة',
+      ayahNumber: 255,
+      ayahCount: 286,
+      firstAyahGlobal: 8,
+      reciter: alafasy,
+      continueThroughSurah: false,
+    );
+    await settle();
+    player.emitComplete();
+    await settle();
+    await settle();
+
+    eq(c.status, RecitationStatus.completed, 'completed after one ayah');
+    eq(player.playedUrls.length, 1, 'no hand-over');
+  });
+
+  await t('the continue switch applies to the ayah already playing', () async {
+    final player = FakePlayer();
+    final c = fakeBacked(player);
+    addTearDown(c.dispose);
+
+    await c.playAyah(
+      surahNumber: 2,
+      surahLabel: 'البقرة',
+      ayahNumber: 255,
+      ayahCount: 286,
+      firstAyahGlobal: 8,
+      reciter: alafasy,
+    );
+    await settle();
+    c.setContinueThroughSurah(false);
+    player.emitComplete();
+    await settle();
+    await settle();
+
+    eq(c.status, RecitationStatus.completed, 'stops at the end of that ayah');
+    eq(player.playedUrls.length, 1, 'no hand-over');
+  });
+
+  await t('switching from a surah to one of its ayahs reloads', () async {
+    final player = FakePlayer();
+    final c = fakeBacked(player);
+    addTearDown(c.dispose);
+
+    await c.playSurah(surahNumber: 1, surahLabel: 'الفاتحة', reciter: alafasy);
+    await c.playAyah(
+      surahNumber: 1,
+      surahLabel: 'الفاتحة',
+      ayahNumber: 1,
+      ayahCount: 7,
+      firstAyahGlobal: 1,
+      reciter: alafasy,
+    );
+    await settle();
+
+    eq(player.playedUrls.length, 2, 'two loads, not a resume');
+    check(
+      player.playedUrls.last.endsWith('/audio/128/ar.alafasy/1.mp3'),
+      'ayah url',
+    );
+    eq(c.isAyahScope, true, 'now in ayah scope');
+  });
+
+  await t('switching back to the surah reloads the surah file', () async {
+    final player = FakePlayer();
+    final c = fakeBacked(player);
+    addTearDown(c.dispose);
+
+    await c.playAyah(
+      surahNumber: 1,
+      surahLabel: 'الفاتحة',
+      ayahNumber: 3,
+      ayahCount: 7,
+      firstAyahGlobal: 1,
+      reciter: alafasy,
+    );
+    await c.playSurah(surahNumber: 1, surahLabel: 'الفاتحة', reciter: alafasy);
+    await settle();
+
+    eq(player.playedUrls.length, 2, 'two loads');
+    check(
+      player.playedUrls.last.endsWith('/audio-surah/128/ar.alafasy/1.mp3'),
+      'surah url',
+    );
+    eq(c.isSurahScope, true, 'back in surah scope');
+    eq(c.ayahNumber, null, 'ayah cleared');
+  });
+
+  await t('changing the reciter keeps the exact ayah', () async {
+    final player = FakePlayer();
+    final c = fakeBacked(player);
+    addTearDown(c.dispose);
+
+    await c.playAyah(
+      surahNumber: 2,
+      surahLabel: 'البقرة',
+      ayahNumber: 255,
+      ayahCount: 286,
+      firstAyahGlobal: 8,
+      reciter: alafasy,
+    );
+    await c.reloadWith(matrood);
+    await settle();
+
+    eq(c.ayahNumber, 255, 'same ayah');
+    eq(c.reciter.id, matrood.id, 'new reciter');
+    check(
+      player.playedUrls.last.contains('ar.abdullahalmatrood/262.mp3'),
+      'same ayah from the new edition',
+    );
+  });
+
+  await t('an ayah can be paused and resumed like a surah', () async {
+    final player = FakePlayer();
+    final c = fakeBacked(player);
+    addTearDown(c.dispose);
+
+    await c.playAyah(
+      surahNumber: 1,
+      surahLabel: 'الفاتحة',
+      ayahNumber: 2,
+      ayahCount: 7,
+      firstAyahGlobal: 1,
+      reciter: alafasy,
+    );
+    await settle();
+    await c.toggle();
+    eq(c.isPaused, true, 'paused');
+    await c.toggle();
+    eq(c.isPlaying, true, 'resumed');
+    eq(player.playedUrls.length, 1, 'resume did not re-request the file');
+  });
+
+  await t('dismissing returns the player to idle', () async {
+    final player = FakePlayer();
+    final c = fakeBacked(player);
+    addTearDown(c.dispose);
+
+    await c.playAyah(
+      surahNumber: 1,
+      surahLabel: 'الفاتحة',
+      ayahNumber: 2,
+      ayahCount: 7,
+      firstAyahGlobal: 1,
+      reciter: alafasy,
+    );
+    await settle();
+    await c.dismiss();
+    await settle();
+
+    eq(c.hasTrack, false, 'no track left');
+    eq(c.status, RecitationStatus.idle, 'idle, not paused');
+    eq(c.ayahNumber, null, 'ayah cleared');
+    eq(c.surahNumber, null, 'surah cleared');
   });
 
   // ------------------------------------------------------------ lifecycle ---
@@ -691,3 +1119,29 @@ void addTearDown(void Function() callback) {
 }
 
 final List<void Function()> _teardowns = <void Function()>[];
+
+/// A tiny [QuranData] with the given ayah counts — enough to exercise the
+/// global ayah numbering without loading the 6236-ayah asset.
+QuranData _dataset(List<int> ayahCounts) {
+  final surahs = <String>[];
+  for (var i = 0; i < ayahCounts.length; i++) {
+    final number = i + 1;
+    final verses = <String>[
+      for (var v = 1; v <= ayahCounts[i]; v++)
+        '{"n":$v,"t":"x","p":1,"j":1}',
+    ].join(',');
+    surahs.add(
+      '{"n":$number,"name":"س$number","ar":"س$number","en":"S$number",'
+      '"tr":"","type":"Meccan","count":${ayahCounts[i]},"bismillah":true,'
+      '"startPage":1,"startJuz":1,"verses":[$verses]}',
+    );
+  }
+  final total = ayahCounts.fold<int>(0, (sum, count) => sum + count);
+  return QuranData.fromJsonString(
+    '{"meta":{"source":"test","riwayah":"","totalSurahs":${ayahCounts.length},'
+    '"totalAyahs":$total,"totalPages":604,'
+    '"juzStartPage":{"1":1},"pageToSurah":{"1":1},"surahStartPage":{"1":1},'
+    '"surahStartJuz":{"1":1},"sajdaAyahs":[]},'
+    '"surahs":[${surahs.join(',')}]}',
+  );
+}

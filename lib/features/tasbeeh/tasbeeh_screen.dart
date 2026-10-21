@@ -242,6 +242,19 @@ class _ActiveCounter extends StatefulWidget {
 class _ActiveCounterState extends State<_ActiveCounter> {
   bool _busy = false;
 
+  /// True while the counter circle is held down.
+  ///
+  /// The circle is the most-tapped control in the app and it used to give no
+  /// visual response at all — the count changed but the surface did not, which
+  /// reads as a missed tap on a slow frame. It now dips slightly under the
+  /// finger, which also makes the long-press-to-undo gesture discoverable.
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (_pressed == value) return;
+    setState(() => _pressed = value);
+  }
+
   Future<void> _count() async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -262,6 +275,18 @@ class _ActiveCounterState extends State<_ActiveCounter> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// Long press: take one back.
+  Future<void> _undo() async {
+    final settings = context.read<SettingsController>();
+    final removed = await widget.tasbeeh.decrement();
+    if (!mounted || !removed) return;
+    if (settings.settings.tasbeehVibration) {
+      await HapticFeedback.lightImpact();
+    }
+    if (!mounted) return;
+    showZadSnack(context, context.l10n.t('tasbeeh.undone'));
   }
 
   Future<void> _reset() async {
@@ -378,71 +403,82 @@ class _ActiveCounterState extends State<_ActiveCounter> {
           Semantics(
             button: true,
             label: l10n.t('tasbeeh.incrementHint'),
+            value: l10n.n(count),
+            hint: l10n.t('tasbeeh.undoHint'),
             child: GestureDetector(
+              onTapDown: (_) => _setPressed(true),
+              onTapUp: (_) => _setPressed(false),
+              onTapCancel: () => _setPressed(false),
               onTap: _count,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: 208,
-                height: 208,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: reached
-                      ? scheme.primaryContainer.withValues(alpha: 0.22)
-                      : scheme.surfaceContainerHigh,
-                  border: Border.all(
-                    color: reached ? tokens.gold : scheme.outlineVariant,
-                    width: 2,
-                  ),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: tokens.ambientShadow,
-                      blurRadius: 22,
-                      offset: const Offset(0, 8),
+              onLongPress: _undo,
+              child: AnimatedScale(
+                scale: _pressed ? 0.965 : 1,
+                duration: const Duration(milliseconds: 110),
+                curve: Curves.easeOut,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 208,
+                  height: 208,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: reached
+                        ? scheme.primaryContainer.withValues(alpha: 0.22)
+                        : scheme.surfaceContainerHigh,
+                    border: Border.all(
+                      color: reached ? tokens.gold : scheme.outlineVariant,
+                      width: 2,
                     ),
-                  ],
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: <Widget>[
-                    if (target > 0)
-                      SizedBox(
-                        width: 188,
-                        height: 188,
-                        child: CircularProgressIndicator(
-                          value: progress,
-                          strokeWidth: 6,
-                          backgroundColor: scheme.outlineVariant.withValues(
-                            alpha: 0.4,
-                          ),
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            reached ? tokens.gold : scheme.primary,
-                          ),
-                        ),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: tokens.ambientShadow,
+                        blurRadius: 22,
+                        offset: const Offset(0, 8),
                       ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Text(
-                          l10n.n(count),
-                          style: zadText(
-                            size: 54,
-                            weight: 700,
-                            family: ZadFonts.arabicUi,
-                            color: scheme.onSurface,
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: <Widget>[
+                      if (target > 0)
+                        SizedBox(
+                          width: 188,
+                          height: 188,
+                          child: CircularProgressIndicator(
+                            value: progress,
+                            strokeWidth: 6,
+                            backgroundColor: scheme.outlineVariant.withValues(
+                              alpha: 0.4,
+                            ),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              reached ? tokens.gold : scheme.primary,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          target > 0
-                              ? '${l10n.t('tasbeeh.target')} ${l10n.n(target)}'
-                              : '∞',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: scheme.onSurfaceVariant,
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
+                            l10n.n(count),
+                            style: zadText(
+                              size: 54,
+                              weight: 700,
+                              family: ZadFonts.arabicUi,
+                              color: scheme.onSurface,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(height: 2),
+                          Text(
+                            target > 0
+                                ? '${l10n.t('tasbeeh.target')} ${l10n.n(target)}'
+                                : '∞',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

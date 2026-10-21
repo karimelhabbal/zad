@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../data/repositories/mushaf_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/common.dart';
 import '../../widgets/zad_app_bar.dart';
 import '../../widgets/zad_logo.dart';
 import '../quran/quran_navigation.dart';
 import '../shell/app_shell.dart';
+import 'audio_downloads_screen.dart';
 
-/// The "more" tab: every secondary destination in one place, plus offline page
-/// management and app information.
+/// The "more" tab: every secondary destination in one place, plus the audio
+/// download manager and app information.
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
 
@@ -22,6 +21,13 @@ class MoreScreen extends StatelessWidget {
     final shell = AppShellState.of(context);
     final theme = Theme.of(context);
     final tokens = context.tokens;
+    // "Forward" points the other way in RTL; hard-coding chevron_left only
+    // looked right because the app ships in Arabic first.
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final forwardChevron = Icon(
+      isRtl ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
+      size: 18,
+    );
 
     final destinations = <_Destination>[
       _Destination(
@@ -67,10 +73,12 @@ class MoreScreen extends StatelessWidget {
         onTap: () => QuranNavigation.openSettings(context),
       ),
       _Destination(
-        title: l10n.t('more.offline'),
-        body: l10n.t('more.offlineBody'),
-        icon: Icons.cloud_download_outlined,
-        onTap: () => _showOfflineSheet(context),
+        title: l10n.t('more.audioDownloads'),
+        body: l10n.t('more.audioDownloadsBody'),
+        icon: Icons.download_for_offline_outlined,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const AudioDownloadsScreen()),
+        ),
       ),
     ];
 
@@ -104,7 +112,7 @@ class MoreScreen extends StatelessWidget {
                     icon: destinations[i].icon,
                     title: destinations[i].title,
                     subtitle: destinations[i].body,
-                    trailing: const Icon(Icons.chevron_left_rounded, size: 18),
+                    trailing: forwardChevron,
                     onTap: destinations[i].onTap,
                   ),
                 ],
@@ -146,14 +154,6 @@ class MoreScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Future<void> _showOfflineSheet(BuildContext context) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => const _OfflineSheet(),
     );
   }
 }
@@ -202,7 +202,7 @@ class _AppCard extends StatelessWidget {
               size: 13,
               weight: 400,
               family: ZadFonts.arabicUi,
-              color: Colors.white.withValues(alpha: 0.86),
+              color: tokens.heroOn.withValues(alpha: 0.86),
             ),
           ),
           const SizedBox(height: ZadSpacing.sm),
@@ -212,7 +212,7 @@ class _AppCard extends StatelessWidget {
               size: 12,
               weight: 600,
               family: ZadFonts.arabicUi,
-              color: tokens.gold,
+              color: tokens.heroGold,
             ),
           ),
           const SizedBox(height: ZadSpacing.md),
@@ -220,192 +220,9 @@ class _AppCard extends StatelessWidget {
             label: l10n.t('app.versionNote'),
             icon: Icons.verified_outlined,
             color: tokens.gold,
+            foreground: tokens.heroGold,
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Offline Mushaf page management: how many pages are stored, download them all
-/// or clear the cache.
-class _OfflineSheet extends StatefulWidget {
-  const _OfflineSheet();
-
-  @override
-  State<_OfflineSheet> createState() => _OfflineSheetState();
-}
-
-class _OfflineSheetState extends State<_OfflineSheet> {
-  int? _downloaded;
-  int? _bytes;
-  bool _busy = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _refresh();
-  }
-
-  Future<void> _refresh() async {
-    final repo = context.read<MushafRepository>();
-    final count = await repo.downloadedCount();
-    final bytes = await repo.cacheSizeBytes();
-    if (!mounted) return;
-    setState(() {
-      _downloaded = count;
-      _bytes = bytes;
-    });
-  }
-
-  Future<void> _clear() async {
-    final l10n = context.l10n;
-    final confirmed = await showZadConfirm(
-      context,
-      title: l10n.t('quran.clearCache'),
-      body: l10n.t('quran.cacheCleared'),
-      destructive: true,
-    );
-    if (!confirmed || !mounted) return;
-    setState(() => _busy = true);
-    await context.read<MushafRepository>().clearCache();
-    await _refresh();
-    if (!mounted) return;
-    setState(() => _busy = false);
-    showZadSnack(context, l10n.t('quran.cacheCleared'));
-  }
-
-  Future<void> _downloadAll() async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    final repo = context.read<MushafRepository>();
-    await repo.downloadAll(
-      onProgress: (done, _) {
-        if (!mounted) return;
-        setState(() => _downloaded = done);
-      },
-      shouldCancel: () => !mounted,
-    );
-    if (!mounted) return;
-    setState(() => _busy = false);
-    await _refresh();
-  }
-
-  String _sizeLabel(int bytes) {
-    if (bytes <= 0) return '0';
-    if (bytes < 1024 * 1024) {
-      return '${(bytes / 1024).toStringAsFixed(0)} KB';
-    }
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final tokens = context.tokens;
-    final count = _downloaded;
-
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(ZadSpacing.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Icon(Icons.cloud_download_outlined, size: 20, color: tokens.gold),
-                const SizedBox(width: ZadSpacing.sm),
-                Expanded(
-                  child: Text(
-                    l10n.t('more.offline'),
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close_rounded, size: 20),
-                ),
-              ],
-            ),
-            const SizedBox(height: ZadSpacing.sm),
-            Text(l10n.t('more.offlineBody'), style: theme.textTheme.bodySmall),
-            const SizedBox(height: ZadSpacing.md),
-            ZadCard(
-              padding: const EdgeInsets.all(ZadSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(ZadRadius.full),
-                    child: LinearProgressIndicator(
-                      value: count == null
-                          ? null
-                          : (count / MushafRepository.totalPages).clamp(0.0, 1.0),
-                      minHeight: 6,
-                    ),
-                  ),
-                  const SizedBox(height: ZadSpacing.md),
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          l10n.t(
-                            'quran.downloadedCount',
-                            args: <String, Object?>{'n': l10n.n(count ?? 0)},
-                          ),
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ),
-                      if (_bytes != null && _bytes! > 0)
-                        ZadBadge(
-                          label: _sizeLabel(_bytes!),
-                          icon: Icons.sd_storage_outlined,
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: ZadSpacing.md),
-            Text(
-              l10n.t('quran.downloadAllBody'),
-              style: theme.textTheme.labelSmall,
-            ),
-            const SizedBox(height: ZadSpacing.md),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _busy || (count ?? 0) == 0 ? null : _clear,
-                    icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                    label: Text(l10n.t('quran.clearCache')),
-                  ),
-                ),
-                const SizedBox(width: ZadSpacing.sm),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: _busy ? null : _downloadAll,
-                    icon: _busy
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.download_rounded, size: 18),
-                    label: Text(l10n.t('quran.downloadAll')),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: ZadSpacing.sm),
-            Text(
-              MushafRepository.primarySourceLabel,
-              style: theme.textTheme.labelSmall,
-            ),
-          ],
-        ),
       ),
     );
   }

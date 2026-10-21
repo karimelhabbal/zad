@@ -1,3 +1,4 @@
+import 'package:adhan_dart/adhan_dart.dart' as adhan;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zad/data/models/settings_models.dart';
@@ -5,8 +6,8 @@ import 'package:zad/data/repositories/local_store.dart';
 import 'package:zad/data/repositories/settings_repository.dart';
 import 'package:zad/data/services/prayer_times_service.dart';
 
-/// Prayer times are computed with the pure-Dart `adhan` implementation. These
-/// tests lock in the contract the UI depends on.
+/// Prayer times are computed with the pure-Dart `adhan_dart` implementation.
+/// These tests lock in the contract the UI depends on.
 void main() {
   const service = PrayerTimesService();
 
@@ -275,15 +276,16 @@ void main() {
       });
     }
 
-    test('Dhuhr is the transit, without adhan\'s extra precautionary minute', () {
-      // adhan's Egyptian preset carries `methodAdjustments.dhuhr = 1`. The
+    test('Dhuhr is the transit, without the extra precautionary minute', () {
+      // The Egyptian preset carries `methodAdjustments[Prayer.dhuhr] = 1`. The
       // authority prints the plain transit, so the service cancels it; if that
       // cancellation is ever dropped, every city lands 1-2 minutes late.
       final params = service.parametersFor(
         settingsWith(method: PrayerCalculationMethod.egyptian),
       );
       expect(
-        params.adjustments.dhuhr + params.methodAdjustments.dhuhr,
+        (params.adjustments[adhan.Prayer.dhuhr] ?? 0) +
+            (params.methodAdjustments[adhan.Prayer.dhuhr] ?? 0),
         0,
         reason: 'the method precaution must cancel out',
       );
@@ -291,7 +293,7 @@ void main() {
       final karachi = service.parametersFor(
         settingsWith(method: PrayerCalculationMethod.karachi),
       );
-      expect(karachi.adjustments.dhuhr, 0);
+      expect(karachi.adjustments[adhan.Prayer.dhuhr] ?? 0, 0);
     });
 
     test('the Egyptian method is the app default', () {

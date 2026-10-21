@@ -10,6 +10,45 @@ const Map<String, String> stringsEn = <String, String>{
   'app.enter': 'Enter Zad',
   'app.startNow': 'Start now',
 
+  // ------------------------------------------------------- onboarding -----
+  'onboarding.skip': 'Skip',
+  'onboarding.next': 'Next',
+  'onboarding.start': 'Get started',
+  'onboarding.welcomeTitle': 'Welcome to Zad',
+  'onboarding.welcomeBody':
+      'Your companion for the Quran, adhkar and prayer times — all on your device, with no account and no internet.',
+  'onboarding.welcomePoint1': 'No ads, no tracking, no sign-up',
+  'onboarding.welcomePoint2': 'Your data stays on your device',
+  'onboarding.quranTitle': 'The Quran the way you like to read it',
+  'onboarding.quranBody':
+      'Read as text or as the full-page Madinah Mushaf, and switch at any time.',
+  'onboarding.quranPoint1': 'Madinah Mushaf, 604 pages, King Fahd Complex font',
+  'onboarding.quranPoint2': 'Colour-coded tajweed and a comfortable dark mode',
+  'onboarding.quranPoint3': 'Bookmarks and automatic return to your last page',
+  'onboarding.audioTitle': 'Listen while you are busy',
+  'onboarding.audioBody':
+      'Play a whole surah or a single ayah, or download it to listen offline.',
+  'onboarding.audioPoint1': 'Pick from a verified list of reciters',
+  'onboarding.audioPoint2': 'Manage and clear downloads in one place',
+  'onboarding.prayerTitle': 'Prayer times, qibla and adhkar',
+  'onboarding.prayerBody':
+      'Prayer times by the Egyptian General Authority of Survey, the qibla direction, the day\u2019s adhkar, and a tasbeeh counter.',
+  'onboarding.prayerPoint1': 'A reminder when each prayer time begins',
+  'onboarding.prayerPoint2': 'A daily Quran portion that you set',
+
+  // ------------------------------------------------ notifications -----
+  'notif.prayerTitle': 'It is time for {prayer}',
+  'notif.prayerBody': '{time} • {city}',
+  'notif.deviceTime': 'your device time',
+  'notif.morningTitle': 'Morning adhkar',
+  'notif.morningBody': 'Start your day with the morning adhkar',
+  'notif.eveningTitle': 'Evening adhkar',
+  'notif.eveningBody': 'Do not forget the evening adhkar',
+  'notif.channelPrayer': 'Prayer times',
+  'notif.channelAdhkar': 'Adhkar reminders',
+  'notif.permissionDenied': 'Notifications are blocked in the device settings',
+  'notif.needsLocation': 'Allow location first so the prayer times can arrive',
+
   // ---------------------------------------------------------- splash -----
   'splash.preparing': 'Preparing the Mushaf and adhkar...',
   'splash.loading': 'Loading...',
@@ -24,9 +63,6 @@ const Map<String, String> stringsEn = <String, String>{
   'nav.more': 'More',
 
   // ----------------------------------------------------------- home -----
-  'home.greetingMorning': 'Good morning',
-  'home.greetingAfternoon': 'Good afternoon',
-  'home.greetingEvening': 'Good evening',
   'home.salam': 'Peace be upon you',
   'home.subtitle': 'May your day be filled with remembrance and obedience',
   'home.nextPrayer': 'Next prayer',
@@ -35,6 +71,9 @@ const Map<String, String> stringsEn = <String, String>{
   'home.currentPrayer': 'It is now {prayer} time',
   'home.todayProgress': "Today's progress",
   'home.dailyWird': 'Daily Quran portion',
+  'home.wirdProgress': '{done} of {target} pages',
+  'home.wirdDone': 'Today\'s portion is complete',
+  'home.wirdSet': 'Set your daily portion',
   'home.continueReading': 'Continue reading',
   'home.quickAccess': 'Quick access',
   'home.verseOfDay': 'Verse of the day',
@@ -129,6 +168,7 @@ const Map<String, String> stringsEn = <String, String>{
   'quran.juzShort': 'Juz {n}',
   'quran.pageShort': 'Page {n}',
   'quran.bookmarks': 'Bookmarks',
+  'quran.bookmarked': 'Has a bookmark',
   'quran.addBookmark': 'Add bookmark',
   'quran.removeBookmark': 'Remove bookmark',
   'quran.bookmarkAdded': 'Bookmark saved',
@@ -142,24 +182,32 @@ const Map<String, String> stringsEn = <String, String>{
   'quran.goToJuz': 'Go to juz',
   'quran.goTo': 'Go',
   'quran.pageIndicator': '{page} / 604',
-  'quran.mushafLoading': 'Loading Mushaf page...',
-  'quran.mushafError': 'Could not load the Mushaf page',
+  'quran.mushafLoading': 'Preparing the Mushaf page...',
+  'quran.mushafError': 'Could not render the Mushaf page',
   'quran.mushafErrorBody':
-      'Check your internet connection and try again. Pages already downloaded are available offline.',
-  'quran.downloadAll': 'Download the Mushaf for offline reading',
-  'quran.downloadAllBody': 'Downloads 604 pages (about 70 MB). Afterwards you can read offline.',
-  'quran.downloading': 'Downloading... {done} of {total}',
-  'quran.downloadedCount': 'Downloaded pages: {n} of 604',
-  'quran.clearCache': 'Clear downloaded pages',
-  'quran.cacheCleared': 'Downloaded pages cleared',
+      'Try again. The Mushaf data and fonts are bundled in the app and need no internet connection.',
   'quran.mushafSource': 'Source',
   'quran.riwayah': "Hafs 'an Asim narration",
   'quran.edition': 'Madinah Mushaf — 604 pages',
-  'quran.pageAppearance': 'Page appearance',
-  'quran.treatment.auto': 'Automatic (follows theme)',
-  'quran.treatment.asPrinted': 'As printed',
-  'quran.treatment.dim': 'Dimmed',
-  'quran.treatment.invert': 'Night (inverted)',
+  'quran.tajweed': 'Tajweed colours',
+  'quran.appearance': 'Appearance',
+  'quran.aboutMushaf': 'About the Mushaf',
+  'mushaf.aboutFontTitle': 'Mushaf font',
+  'mushaf.aboutFontBody':
+      'Every page is drawn with the King Fahd Complex font for that exact page — one font per page across the 604 pages of the Madinah Mushaf. The text is Uthmani as printed; not a single character has been changed.',
+  'mushaf.aboutEdition': "Hafs 'an Asim • 15 lines per page",
+  'mushaf.aboutPackage':
+      'The fonts and page data come from the qcf_quran_plus package (MIT), sourced from the King Fahd Complex for the Printing of the Holy Quran.',
+  'mushaf.aboutTextTitle': 'The Quran text',
+  'mushaf.aboutTextBody':
+      'The app never edits, re-orders or omits any part of the Quran text. Pages are shown as the Complex laid them out, and the Tajweed colouring is part of the font itself rather than something the app adds.',
+  'mushaf.aboutPrivacyTitle': 'Privacy',
+  'mushaf.aboutPrivacyBody':
+      'Reading the Mushaf works fully offline: nothing is transmitted, there is no analytics and no tracking, and everything you save (last page, bookmarks, settings) stays on your device.',
+  'mushaf.aboutNoAds': 'No ads',
+  'mushaf.aboutLicenceTitle': 'Licence',
+  'mushaf.aboutLicenceBody':
+      'The Complex publishes its digital copy for free use in websites, software and applications; only commercial print for sale is reserved. The package itself is MIT licensed.',
   'quran.fontSize': 'Font size',
   'quran.share': 'Share',
   'quran.copy': 'Copy',
@@ -265,7 +313,7 @@ const Map<String, String> stringsEn = <String, String>{
   'tasbeeh.laps': 'Rounds',
   'tasbeeh.completedLaps': 'Completed {n} rounds',
   'tasbeeh.tap': 'Tap',
-  'tasbeeh.hint': 'Tap the circle to count — designed for one-handed use',
+  'tasbeeh.hint': 'Tap the circle to count, long-press to undo',
   'tasbeeh.selectDhikr': 'Select dhikr',
   'tasbeeh.myCustom': 'Mine',
   'tasbeeh.builtInShort': 'Built-in',
@@ -331,10 +379,16 @@ const Map<String, String> stringsEn = <String, String>{
   'settings.eveningReminder': 'Evening adhkar reminder',
   'settings.reminderTime': 'Reminder time',
   'settings.notificationsNote':
-      'Notification preferences are stored here. Scheduling system notifications requires the notification permission to be enabled in a distribution build.',
+      'Reminders are scheduled on your device only, with no external service. If none arrive, make sure notifications are allowed for this app in the system settings.',
   'settings.quranSection': 'The Quran',
   'settings.quranFontSize': 'Text reading font size',
   'settings.defaultDisplayMode': 'Default display mode',
+  'settings.dailyWird': 'Daily portion',
+  'settings.dailyWirdBody': 'How many Mushaf pages you want to read each day',
+  'settings.wirdOff': 'No portion',
+  'settings.wirdPages': '{n} pages',
+  'settings.replayIntro': 'Replay the intro',
+  'settings.replayIntroBody': 'Take the quick tour of the app again',
   'settings.locationSection': 'Location',
   'settings.useGps': 'Use device location',
   'settings.useGpsBody': 'To compute prayer times and Qibla automatically',
@@ -376,8 +430,8 @@ const Map<String, String> stringsEn = <String, String>{
   'more.settingsBody': 'Theme, language and timings',
   'more.about': 'About Zad',
   'more.aboutBody': 'Sources and privacy',
-  'more.offline': 'Downloaded pages',
-  'more.offlineBody': 'Manage saved Mushaf pages',
+  'more.audioDownloads': 'Audio downloads',
+  'more.audioDownloadsBody': 'Manage saved recitations for offline listening',
 
   // ---------------------------------------------------------- common ----
   'common.loading': 'Loading...',
@@ -386,6 +440,7 @@ const Map<String, String> stringsEn = <String, String>{
   'common.close': 'Close',
   'common.ok': 'OK',
   'common.cancel': 'Cancel',
+  'common.confirm': 'Confirm',
   'common.save': 'Save',
   'common.delete': 'Delete',
   'common.edit': 'Edit',
@@ -457,6 +512,8 @@ const Map<String, String> stringsEn = <String, String>{
   'tasbeeh.pickDhikr': 'Pick a dhikr to begin',
   'tasbeeh.customHint': 'Tap + to add your own dhikr',
   'tasbeeh.incrementHint': 'Tap the circle to count',
+  'tasbeeh.undoHint': 'Long-press to undo a count',
+  'tasbeeh.undone': 'Last count undone',
   'tasbeeh.statsTitle': 'Your statistics',
   'tasbeeh.counterFor': '{name} counter',
 
@@ -487,13 +544,17 @@ const Map<String, String> stringsEn = <String, String>{
   'audio.pause': 'Pause',
   'audio.resume': 'Resume',
   'audio.stop': 'Stop',
+  'audio.dismiss': 'Close the player',
   'audio.loading': 'Preparing the recitation...',
+  'audio.downloading': 'Downloading the recitation... {p}%',
   'audio.cancelPrepare': 'Cancel preparing the recitation',
   'audio.completed': 'Surah finished',
   'audio.retry': 'Try again',
   'audio.error': 'Could not play the recitation',
   'audio.errorNetwork':
       'No network connection. Check your connection and try again.',
+  'audio.errorDownload':
+      'Could not download the recitation. Check your connection and try again.',
   'audio.errorTimeout':
       'Preparing the recitation took too long. The network is slow — try again.',
   'audio.errorUnavailable': 'This recording is not available on the server.',
@@ -514,6 +575,51 @@ const Map<String, String> stringsEn = <String, String>{
       "{reciter}'s recording of this surah is not available. Try another reciter.",
   'audio.searchReciter': 'Search by reciter name',
   'audio.noReciterMatches': 'No reciter matches that name.',
+
+  // ------------------------------------------------- listening affordance --
+  'audio.listen': 'Listen',
+  'audio.scopeSurah': 'Whole surah',
+  'audio.scopeAyah': 'Specific ayah',
+  'audio.playSurahFull': 'Play the whole surah',
+  'audio.playSurahHint':
+      'The surah streams as one continuous file, so you can seek within it.',
+  'audio.surahMeta': '{n} ayahs • starts on page {page}',
+  'audio.ayahOfSurah': '{surah} • ayah {n}',
+  'audio.listenToAyah': 'Listen to this ayah',
+  'audio.continueAfter': 'Continue with the next ayahs',
+  'audio.continueAfterBody': 'Moves on to the next ayah when this one ends.',
+  'audio.ayahFinished': 'Ayah finished',
+
+  // ------------------------------------------------ audio download manager --
+  'audio.downloads.title': 'Audio downloads',
+  'audio.downloads.subtitle': 'Recitations stored on the device, playable offline',
+  'audio.downloads.reciter': 'Download reciter',
+  'audio.downloads.change': 'Change',
+  'audio.downloads.downloaded': 'Downloaded',
+  'audio.downloads.notDownloaded': 'Not downloaded',
+  'audio.downloads.download': 'Download',
+  'audio.downloads.delete': 'Delete',
+  'audio.downloads.deleteAll': 'Delete all downloads',
+  'audio.downloads.confirmDeleteAll':
+      'Every downloaded recitation, for every reciter, will be removed from '
+      'this device. Continue?',
+  'audio.downloads.totalSize': 'Total size',
+  'audio.downloads.downloadedCount': '{n} surahs downloaded',
+  'audio.downloads.empty': 'No recitations downloaded yet.',
+  'audio.downloads.note':
+      'Downloaded from the same stream source (alquran.cloud) at 128 kbps, '
+      'with no ads and no tracking.',
+  'audio.downloads.failed':
+      'Could not download the surah. Check your connection and try again.',
+  'audio.downloads.saved': 'Surah downloaded.',
+  'audio.downloads.removed': 'Recitation removed from the device.',
+  'audio.downloads.deleteFailed':
+      'Could not delete the recitation — it may be playing right now. Stop '
+      'listening and try again.',
+  'audio.downloads.cleared': 'All downloads deleted.',
+  'audio.downloads.sizeMb': '{v} MB',
+  'audio.downloads.scanning': 'Checking downloaded files...',
+  'audio.downloads.progress': 'Downloading {p}%',
 
   // ------------------------------------------------------------ search --
   'search.title': 'Search',

@@ -31,9 +31,7 @@ class SettingsRepository {
           json['quranDisplayMode'] as String?,
         ),
         quranFontScale: _fontScale(json['quranFontScale']),
-        mushafPageTreatment: MushafPageTreatment.fromStorage(
-          json['mushafPageTreatment'] as String?,
-        ),
+        mushafTajweed: json['mushafTajweed'] as bool? ?? true,
         calculationMethod: _calculationMethod(
           json['calculationMethod'] as String?,
           revision,
@@ -55,6 +53,7 @@ class SettingsRepository {
         reciterId: QuranReciters.isVerified(json['reciterId'] as String?)
             ? json['reciterId'] as String
             : QuranReciters.defaultReciterId,
+        dailyWirdPages: _clampInt(json['dailyWirdPages'], 0, 604, 0),
       );
     } catch (_) {
       // Outdated / malformed payload — fall back to defaults instead of
@@ -71,7 +70,7 @@ class SettingsRepository {
       'localeCode': settings.localeCode,
       'quranDisplayMode': settings.quranDisplayMode.name,
       'quranFontScale': settings.quranFontScale,
-      'mushafPageTreatment': settings.mushafPageTreatment.name,
+      'mushafTajweed': settings.mushafTajweed,
       'calculationMethod': settings.calculationMethod.name,
       'asrMadhab': settings.asrMadhab.name,
       'highLatitude': settings.highLatitude.name,
@@ -89,6 +88,7 @@ class SettingsRepository {
       'tasbeehVibration': settings.tasbeehVibration,
       'keepScreenAwake': settings.keepScreenAwake,
       'reciterId': settings.reciterId,
+      'dailyWirdPages': settings.dailyWirdPages,
     },
   );
 

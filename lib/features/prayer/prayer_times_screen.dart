@@ -319,6 +319,7 @@ class _NextPrayerHero extends StatelessWidget {
                 ZadBadge(
                   label: l10n.clock(nextTime!),
                   color: tokens.gold,
+                  foreground: tokens.heroGold,
                 ),
             ],
           ),
@@ -326,7 +327,7 @@ class _NextPrayerHero extends StatelessWidget {
           Text(
             l10n.t('prayer.remainingTime'),
             style: theme.textTheme.labelSmall?.copyWith(
-              color: const Color(0xFF9FC0B1),
+              color: tokens.heroMuted,
             ),
           ),
           const SizedBox(height: 2),
@@ -337,7 +338,7 @@ class _NextPrayerHero extends StatelessWidget {
               weight: 700,
               height: 1.15,
               family: ZadFonts.arabicUi,
-              color: Colors.white,
+              color: tokens.heroOn,
             ),
           ),
           const SizedBox(height: ZadSpacing.md),
@@ -346,7 +347,7 @@ class _NextPrayerHero extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress.clamp(0.0, 1.0),
               minHeight: 4,
-              backgroundColor: Colors.white.withValues(alpha: 0.18),
+              backgroundColor: tokens.heroTrack,
               valueColor: AlwaysStoppedAnimation<Color>(tokens.gold),
             ),
           ),
@@ -354,7 +355,7 @@ class _NextPrayerHero extends StatelessWidget {
           Text(
             methodLabel,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: const Color(0xFF9FC0B1),
+              color: tokens.heroMuted,
             ),
           ),
         ],

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>زاد — مراجعة مسار الاستخدام</title>
+<style>
+  :root{
+    --surface:#0B1914; --low:#0E1E18; --container:#12241E; --high:#162C24; --highest:#1B332A;
+    --on:#E7EDE9; --variant:#A9BBB2; --outline:#2C3B34; --outline2:#5C6B64;
+    --gold:#EDBF7A; --goldsoft:rgba(237,191,122,.14);
+    --primary:#99D3B8; --danger:#F09595; --dangerbg:rgba(226,75,74,.10); --dangerline:rgba(226,75,74,.42);
+    --warn:#FAC775; --warnbg:rgba(250,199,117,.09); --warnline:rgba(250,199,117,.38);
+    --ok:#5DCAA5; --okbg:rgba(93,202,165,.09); --okline:rgba(93,202,165,.38);
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--surface); color:var(--on);
+    font-family:"Segoe UI","Noto Naskh Arabic",Tahoma,system-ui,sans-serif;
+    font-size:15px; line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:56px 28px 96px}
+  header{border-bottom:1px solid var(--outline);padding-bottom:32px;margin-bottom:40px}
+  .kicker{color:var(--gold);font-size:12px;letter-spacing:.14em;font-weight:600;margin:0 0 14px}
+  h1{font-size:34px;line-height:1.35;margin:0 0 12px;font-weight:600;letter-spacing:-.01em}
+  .sub{color:var(--variant);font-size:15px;margin:0;max-width:70ch}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+  .meta span{font-size:12px;color:var(--variant);background:var(--container);border:1px solid var(--outline);border-radius:999px;padding:5px 12px}
+  .meta b{color:var(--on);font-weight:600}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:36px 0 8px}
+  .stat{background:var(--container);border:1px solid var(--outline);border-radius:14px;padding:18px 16px}
+  .stat .n{font-size:30px;font-weight:600;line-height:1.1;color:var(--gold)}
+  .stat .l{font-size:12.5px;color:var(--variant);margin-top:6px}
+
+  section{margin-top:52px}
+  h2{font-size:21px;font-weight:600;margin:0 0 6px;display:flex;align-items:center;gap:12px}
+  h2 .num{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:30px;height:30px;border-radius:9px;flex:0 0 auto;
+    background:var(--goldsoft);border:1px solid rgba(237,191,122,.4);
+    color:var(--gold);font-size:14px;font-weight:600;
+  }
+  .lede{color:var(--variant);font-size:13.5px;margin:0 0 20px;padding-inline-start:42px}
+
+  .card{
+    background:var(--container);border:1px solid var(--outline);border-radius:14px;
+    padding:20px 22px;margin-bottom:12px;position:relative;
+  }
+  .card.bad{border-inline-start:3px solid var(--dangerline)}
+  .card.warn{border-inline-start:3px solid var(--warnline)}
+  .card.ok{border-inline-start:3px solid var(--okline)}
+  .card h3{font-size:15.5px;font-weight:600;margin:0 0 10px;line-height:1.5}
+  .card p{margin:0 0 10px;font-size:14px;color:var(--on)}
+  .card p:last-child{margin-bottom:0}
+  .card .why{color:var(--variant)}
+  .lbl{
+    display:inline-block;font-size:11.5px;font-weight:600;letter-spacing:.04em;
+    padding:2px 9px;border-radius:6px;margin-inline-end:8px;vertical-align:1px;
+  }
+  .lbl.bad{background:var(--dangerbg);color:var(--danger);border:1px solid var(--dangerline)}
+  .lbl.warn{background:var(--warnbg);color:var(--warn);border:1px solid var(--warnline)}
+  .lbl.ok{background:var(--okbg);color:var(--ok);border:1px solid var(--okline)}
+  code{
+    font-family:var(--mono);font-size:12.5px;background:#060F0C;
+    border:1px solid var(--outline);border-radius:5px;padding:1.5px 6px;
+    color:var(--gold);direction:ltr;display:inline-block;unicode-bidi:isolate;
+  }
+  .fix{
+    margin-top:12px;padding-top:12px;border-top:1px dashed var(--outline);
+    font-size:13.5px;color:var(--variant);
+  }
+  .fix b{color:var(--primary);font-weight:600}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
+  th,td{text-align:right;padding:11px 12px;border-bottom:1px solid var(--outline);vertical-align:top}
+  th{color:var(--variant);font-weight:600;font-size:12px;letter-spacing:.03em;background:var(--low)}
+  td:first-child{white-space:nowrap;color:var(--gold);font-family:var(--mono);font-size:12px;direction:ltr;text-align:left}
+  tr:last-child td{border-bottom:none}
+  .wave{background:var(--container);border:1px solid var(--outline);border-radius:14px;overflow:hidden;margin-bottom:14px}
+  .wave-h{padding:14px 20px;border-bottom:1px solid var(--outline);display:flex;align-items:baseline;gap:12px;background:var(--low)}
+  .wave-h strong{font-size:15px;font-weight:600}
+  .wave-h span{font-size:12.5px;color:var(--variant)}
+  .wave-b{padding:16px 20px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-size:12.5px;background:var(--high);border:1px solid var(--outline);border-radius:8px;padding:5px 11px;color:var(--on)}
+  .chip i{font-style:normal;color:var(--gold);font-family:var(--mono);font-size:11.5px;margin-inline-end:6px}
+
+  .note{background:var(--low);border:1px solid var(--outline);border-radius:14px;padding:20px 22px;margin-top:16px}
+  .note h3{margin:0 0 10px;font-size:14.5px;font-weight:600;color:var(--gold)}
+  .note ul{margin:0;padding-inline-start:20px;font-size:13.5px;color:var(--variant)}
+  .note li{margin-bottom:7px}
+  footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--outline);font-size:12.5px;color:var(--outline2)}
+  @media (max-width:720px){
+    .wrap{padding:36px 18px 64px}
+    h1{font-size:26px}
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .lede{padding-inline-start:0}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="kicker">مراجعة تجربة الاستخدام · زاد 1.0.0</p>
+  <h1>أين يتعثّر المسار، وما الذي يستحق البناء بعده</h1>
+  <p class="sub">
+    فحص كامل لمسارات التطبيق على مستوى الكود: من الإطلاق إلى القارئ، ومن بطاقة المواقيت إلى تذكير الفجر.
+    كل ملاحظة أدناه مسندة إلى موضعها في الشيفرة، ومعها إصلاح محدّد — لا انطباعات عامة.
+  </p>
+  <div class="meta">
+    <span><b>21</b> أكتوبر 2026</span>
+    <span><b>61</b> ملف Dart · <b>21,768</b> سطرًا</span>
+    <span><b>27</b> ملاحظة موثّقة</span>
+    <span>المرجع: <b>lib/</b></span>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="n">11</div><div class="l">أخطاء وظيفية مؤكدة</div></div>
+  <div class="stat"><div class="n">6</div><div class="l">نقاط احتكاك في المسار</div></div>
+  <div class="stat"><div class="n">8</div><div class="l">فجوات منتج</div></div>
+  <div class="stat"><div class="n">2</div><div class="l">مشكلات أداء</div></div>
+</div>
+
+<section>
+  <h2><span class="num">أ</span> أخطاء وظيفية مؤكدة</h2>
+  <p class="lede">سلوكيات تُنتج نتيجة خاطئة أو تُخلف وعدًا لا يتحقق. هذه ليست تحسينات، بل إصلاحات.</p>
+
+  <div class="card bad">
+    <h3><span class="lbl bad">خطأ</span> «أذكار اليوم» لا تُصفَّر يوميًا</h3>
+    <p>تقدّم الأذكار يُحفظ كخريطة <code>categoryId:itemId → int</code> بلا أي مفتاح تاريخ، فيُقرأ كما هو كل يوم.</p>
+    <p class="why">المقارنة تكشف التناقض: عدّاد السبحة يحمل <code>dayKey</code> ويُرحَّل عند تغيّر اليوم، أما الأذكار فلا.</p>
+    <p class="why">
+      <code>azkar_repository.dart:125</code> · <code>tasbeeh_repository.dart:109</code> ·
+      <code>home_screen.dart:556</code>
+    </p>
+    <p>الأثر: بعد اليوم الأول تصبح نسبة «أذكار اليوم» في الرئيسية تراكمية أبدية، وزر «متابعة الورد» يقفز إلى ذكر أُكمل أمس. المستخدم يرى إنجازًا لم يفعله، ثم يفقد الثقة في كل رقم على الشاشة.</p>
+    <div class="fix"><b>الإصلاح:</b> إضافة <code>dayKey</code> إلى مفتاح التخزين وتصفير العدّادات عند تغيّر اليوم، مع إبقاء إحصاء أرشيفي منفصل إن أردت لاحقًا سجلًا أسبوعيًا.</div>
+  </div>
+
+  <div class="card bad">
+    <h3><span class="lbl bad">خطأ</span> لوحة الرئيسية تُعاد بناؤها كل ثانية</h3>
+    <p>مؤقّت العدّاد التنازلي ينادي <code>notifyListeners()</code> كل ثانية، و<code>HomeScreen</code> يراقب المتحكّم على مستوى الشاشة كلها.</p>
+    <p class="why"><code>prayer_controller.dart:61</code> · <code>home_screen.dart:49</code></p>
+    <p>الأثر: بطاقة الترحيب، والإحصاءات الثلاث، وبطاقة الورد، والاختصارات الستة، وآية اليوم — كلها تُبنى ستين مرة في الدقيقة، من أجل رقم واحد يتغيّر.</p>
+    <div class="fix"><b>الإصلاح:</b> حصر الثانية في <code>ValueNotifier&lt;DateTime&gt;</code> يستهلكه نص العدّاد وحده عبر <code>ValueListenableBuilder</code>، وإخراج باقي اللوحة من دائرة الاستماع.</div>
+  </div>
+
+  <div class="card bad">
+    <h3><span class="lbl bad">خطأ</span> البحث في تبويب القرآن لا يعمل خارج تبويب السور</h3>
+    <p>حقل البحث مشترك، لكن قائمة الأجزاء وشبكة الصفحات لا تستقبلان الاستعلام أصلًا.</p>
+    <p class="why"><code>quran_screen.dart:171–174</code></p>
+    <p>الأثر: من يكتب وهو على «الأجزاء» أو «الصفحات» لا يرى أي تغيّر — فيقرأها كعطل لا كسلوك.</p>
+    <div class="fix"><b>الإصلاح:</b> الانتقال إلى تبويب السور عند أول حرف (<code>_tabs.animateTo(0)</code>)، أو عرض طبقة نتائج تحلّ فوق التبويبات الثلاثة.</div>
+  </div>
+
+  <div class="card bad">
+    <h3><span class="lbl bad">خطأ</span> سطحان للبحث بنفس الوظيفة</h3>
+    <p>شاشة بحث كاملة تُفتح من الرئيسية، وحقل بحث مدمج داخل تبويب القرآن — كلاهما يبحث في أسماء السور ونص الآيات، وكلٌّ يعرض نتائجه بشكل مختلف.</p>
+    <p class="why"><code>search_screen.dart</code> · <code>quran_screen.dart:131</code> · <code>quran_navigation.dart:46</code></p>
+    <div class="fix"><b>الإصلاح:</b> توحيد واحد منهما. الأنسب إبقاء الشاشة الكاملة (لها سياق ومساحة وتاريخ) وتحويل الحقل المدمج إلى زر يفتحها.</div>
+  </div>
+
+  <div class="card bad">
+    <h3><span class="lbl bad">خطأ</span> زر «المظهر» في المصحف يقلب ثيم التطبيق كله</h3>
+    <p>الأيقونة داخل شريط القارئ تنادي <code>setThemeMode</code> العام، لا وضعًا خاصًا بالصفحة.</p>
+    <p class="why"><code>mushaf_reader_screen.dart:227</code></p>
+    <p>الأثر: من أراد صفحة داكنة يخرج ليجد كل التطبيق قد تغيّر — تغيير غير متوقع خارج السياق الذي طلبه.</p>
+    <div class="fix"><b>الإصلاح:</b> تجاوز محلي للقارئ فقط (صفحة داكنة داخل تطبيق فاتح)، أو تسمية صريحة: «ثيم التطبيق».</div>
+  </div>
+
+  <div class="card bad">
+    <h3><span class="lbl bad">خطأ</span> النقر على تذكير الصلاة لا يفتح المواقيت</h3>
+    <p>التهيئة لا تمرّر <code>onDidReceiveNotificationResponse</code>، ولا يُقرأ <code>getNotificationAppLaunchDetails</code> عند البدء البارد.</p>
+    <p class="why"><code>notification_service.dart:82</code></p>
+    <p>الأثر: المستخدم يضغط إشعار الفجر — أهم إشعار في التطبيق — فيجد نفسه أمام شاشة السبلاش ثم الرئيسية.</p>
+    <div class="fix"><b>الإصلاح:</b> رد نداء يدفع شاشة المواقيت، مع مسار مستقل للبدء البارد من إشعار.</div>
+  </div>
+
+  <div class="card bad">
+    <h3><span class="lbl bad">خطأ</span> الإشعارات تتوقف بعد سبعة أيام بلا فتح للتطبيق</h3>
+    <p>تُجدول سبعة أيام فقط، وتُعاد الجدولة مرة واحدة عند كل تشغيل.</p>
+    <p class="why"><code>notification_service.dart:61</code> · <code>notification_bridge.dart:45</code></p>
+    <p>الأثر: من سافر أو انشغل أسبوعًا يفقد تذكيرات الصلاة بصمت تام — بلا خطأ ولا إشعار بذلك. في تطبيق مبني على المواقيت، هذا أخطر عطل ممكن لأنه يقع في اللحظة التي لا ينظر فيها المستخدم.</p>
+    <div class="fix"><b>الإصلاح:</b> رفع الأفق إلى 30–60 يومًا (تكلفة المنبّهات زهيدة جدًا)، أو مزامنة دورية عبر <code>WorkManager</code>.</div>
+  </div>
+
+  <div class="card bad">
+    <h3><span class="lbl bad">خطأ</span> زر الرجوع في أندرويد يخرج من التطبيق</h3>
+    <p>لا <code>PopScope</code> في القشرة، فالرجوع من أي تبويب غير الأول يُغلق التطبيق.</p>
+    <p class="why"><code>app_shell.dart</code></p>
+    <div class="fix"><b>الإصلاح:</b> <code>canPop: _index == 0</code> مع العودة إلى الرئيسية عند الرجوع من تبويب آخر — سلوك أندرويد المتوقع.</div>
+  </div>
+
+  <div class="card warn">
+    <h3><span class="lbl warn">احتكاك</span> السبلاش يطلب نقرة في كل تشغيل</h3>
+    <p>البيانات جاهزة والحالة <code>_ready</code> صحيحة، لكن الانتقال مربوط بزر «ادخل» فقط.</p>
+    <p class="why"><code>splash_screen.dart:262</code></p>
+    <div class="fix"><b>الإصلاح:</b> انتقال تلقائي بعد الجاهزية (مع حدّ أدنى بصري قصير)، وإبقاء النقرة اليدوية للتوجيه الأول فقط.</div>
+  </div>
+
+  <div class="card warn">
+    <h3><span class="lbl warn">صيانة</span> رقم الإصدار مكتوب يدويًا</h3>
+    <p>الشاشة تعرض <code>'1.0.0'</code> نصًّا، وملف الحزم يقول <code>1.0.0+1</code>. سيفترقان عند أول إصدار.</p>
+    <p class="why"><code>settings_screen.dart:25</code> · <code>pubspec.yaml:5</code></p>
+    <div class="fix"><b>الإصلاح:</b> <code>package_info_plus</code>.</div>
+  </div>
+
+  <div class="card warn">
+    <h3><span class="lbl warn">دقّة</span> عدّاد «صفحات اليوم» يقيس الزيارات لا القراءة</h3>
+    <p>يُسجَّل رقم كل صفحة تُفتح في مجموعة، فيُحتسب الانتقال من صفحة 1 إلى صفحة 600 «صفحتين».</p>
+    <p class="why"><code>quran_controller.dart:41</code> · <code>quran_controller.dart:93</code></p>
+    <p>الأثر: هدف الورد اليومي (20 صفحة مثلًا) يمكن بلوغه بالقفز بين المواضع دون قراءة. الرقم الذي يُفترض أن يحفّز يصبح بلا معنى.</p>
+    <div class="fix"><b>الإصلاح:</b> احتساب التتابع (صفحات متجاورة فعلًا) أو زمن القراءة الفعلي، وليس مجموعة الزيارات.</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">ب</span> نقاط الاحتكاك في المسار</h2>
+  <p class="lede">لا شيء منها «مكسور»، لكن كل واحدة تستهلك انتباهًا كان يجب أن يذهب إلى المحتوى.</p>
+
+  <div class="card warn">
+    <h3>بطاقة ترحيب تزيينية تسبق أهم بطاقة في التطبيق</h3>
+    <p>بطاقة كاملة (أيقونة 46px + سطران) لا تفعل شيئًا، وتدفع بطاقة المواقيت — وهي سبب فتح التطبيق — أسفل الشاشة الأولى.</p>
+    <p class="why"><code>home_screen.dart:95</code></p>
+    <div class="fix"><b>الإصلاح:</b> حذفها؛ التحية موجودة أصلًا في عنوان الشاشة مع المدينة والتاريخ الهجري.</div>
+  </div>
+
+  <div class="card warn">
+    <h3>الاختصارات الستة تكرّر نصف شريط التنقّل</h3>
+    <p>ثلاثة من ستة مربّعات (القرآن، الأذكار، السبحة) هي التبويبات 1–3 نفسها، على بُعد شبر من الشريط السفلي.</p>
+    <p class="why"><code>home_screen.dart:800–837</code></p>
+    <div class="fix"><b>الإصلاح:</b> إحلال ما لا وجود له في الشريط: المواقيت، القبلة، المراجع، وتحميلات الصوت — أو جعلها سياقية («أكمل من حيث توقفت»).</div>
+  </div>
+
+  <div class="card warn">
+    <h3>بطاقة المواقيت نفسها غير قابلة للنقر</h3>
+    <p>الانتقال إلى جدول المواقيت الكامل يتم عبر زر نصّي صغير في أسفل البطاقة، لا بالبطاقة.</p>
+    <p class="why"><code>home_screen.dart:390</code></p>
+    <div class="fix"><b>الإصلاح:</b> البطاقة كلها وجهة، مع إبقاء الزر كإشارة بصرية.</div>
+  </div>
+
+  <div class="card warn">
+    <h3>أربعة صفوف تحكم قبل أول عنصر في تبويب القرآن</h3>
+    <p>مبدّل الوضع، ثم حقل البحث، ثم بطاقة المتابعة، ثم مبدّل التبويبات — ثم تبدأ القائمة. نحو 40% من الشاشة قبل المحتوى.</p>
+    <p class="why"><code>quran_screen.dart:113–177</code></p>
+    <div class="fix"><b>الإصلاح:</b> دمج مبدّل الوضع داخل مبدّل التبويبات، أو إخفاء بطاقة المتابعة بعد أول قراءة (تصبح سطرًا).</div>
+  </div>
+
+  <div class="card warn">
+    <h3>الإعدادات: سبعة أقسام في تمرير واحد</h3>
+    <p>المظهر، القرآن، الصلاة، الإشعارات، الموقع، السبحة، حول — بلا بحث ولا صفحات فرعية.</p>
+    <p class="why"><code>settings_screen.dart:45</code></p>
+    <div class="fix"><b>الإصلاح:</b> تقسيم إلى «القراءة» و«الصلاة والموقع» و«التنبيهات» و«حول التطبيق».</div>
+  </div>
+
+  <div class="card warn">
+    <h3>سهم «اذهب» لا ينعكس في الواجهة الإنجليزية</h3>
+    <p><code>Icons.arrow_back</code> ثابت. المشروع يعالج هذه النقطة في شاشة «المزيد» لكنه نسيها في بطاقة المتابعة.</p>
+    <p class="why"><code>quran_screen.dart:423</code></p>
+    <div class="fix"><b>الإصلاح:</b> أيقونة مشروطة بالاتجاه، كما في <code>more_screen.dart:26</code>.</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">ج</span> فجوات منتج</h2>
+  <p class="lede">ما يفتقده التطبيق وهو متوقَّع منه، مرتّبًا بأثره على الاستخدام اليومي.</p>
+
+  <div class="card bad">
+    <h3><span class="lbl bad">الأولوية القصوى</span> لا تشغيل في الخلفية</h3>
+    <p>المتحكّم يوقف الصوت عمدًا عند مغادرة التطبيق. النتيجة: لا استماع مع قفل الشاشة، ولا أثناء القيادة، ولا أزرار وسائط في الإشعار.</p>
+    <p class="why"><code>audio_controller.dart:943</code></p>
+    <p>هذه أهم وظيفة غائبة عن تطبيق قرآن: الاستماع هو نصف الاستخدام، ويحدث تحديدًا حين لا تكون الشاشة في اليد. القرار موثّق في الكود، لكنه يكلّف أكثر مما يوفّر.</p>
+    <div class="fix"><b>الإصلاح:</b> خدمة صوت أمامية (<code>audio_service</code>) مع عناصر تحكّم في الإشعار وشاشة القفل، وإلغاء الإيقاف التلقائي عند الخلفية.</div>
+  </div>
+
+  <div class="card warn">
+    <h3><span class="lbl warn">فجوة</span> لا تتبّع للتلاوة</h3>
+    <p>المتحكّم يعرف الآية الجارية (<code>ayahNumber</code>)، لكن القارئ النصي لا يُبرزها ولا يُمرّر إليها، والمصحف يُبرز المراجع فقط لا الآية المسموعة.</p>
+    <p class="why"><code>mushaf_reader_screen.dart:318</code> · <code>quran_reader_screen.dart:178</code></p>
+    <p>البنية التحتية موجودة بالكامل؛ ينقص الربط فقط. هذه أرخص ميزة عالية الأثر في القائمة.</p>
+    <div class="fix"><b>الإصلاح:</b> تمرير <code>HighlightVerse</code> من الآية الجارية إلى المصحف، وإبراز + تمرير تلقائي في القارئ النصي.</div>
+  </div>
+
+  <div class="card warn">
+    <h3><span class="lbl warn">فجوة</span> الشاشة تنام أثناء القراءة</h3>
+    <p>لا إبقاء للشاشة مضاءة في أيٍّ من القارئين، ولا حزمة wake lock في الاعتماديات. صفحة المصحف تحتاج دقائق من النظر الثابت.</p>
+    <div class="fix"><b>الإصلاح:</b> <code>wakelock_plus</code> مُفعَّل داخل القارئين فقط، ويُحرَّر عند الخروج.</div>
+  </div>
+
+  <div class="card warn">
+    <h3><span class="lbl warn">فجوة</span> لا أذان صوتي</h3>
+    <p>التذكيرات إشعارات نصّية بقناة واحدة بلا اختيار نغمة. من يتوقع «أذانًا» من تطبيق مواقيت لن يجده.</p>
+    <p class="why"><code>notification_service.dart:252</code></p>
+  </div>
+
+  <div class="card warn">
+    <h3><span class="lbl warn">فجوة</span> لا تفسير ولا ترجمة</h3>
+    <p>الواجهة الإنجليزية متاحة بالكامل، لكن معاني الآيات لا. النقر على آية يعطي: استماع، مرجع، نسخ، مشاركة، مصحف — ولا يعطي معنى.</p>
+    <p class="why"><code>quran_reader_screen.dart:312–401</code></p>
+  </div>
+
+  <div class="card warn">
+    <h3><span class="lbl warn">فجوة</span> لا تذكير بالورد القرآني</h3>
+    <p>هدف الصفحات اليومي موجود في الإعدادات ويُقاس في الرئيسية، لكن لا يوجد له تذكير — بينما الأذكار والصلوات لهما.</p>
+    <p class="why"><code>notification_service.dart:141–165</code></p>
+  </div>
+
+  <div class="card warn">
+    <h3><span class="lbl warn">فجوة</span> لا نسخ احتياطي ولا تصدير</h3>
+    <p>المراجع، وموضع القراءة، وعدّادات السبحة، وتقدّم الأذكار — كلها على الجهاز فقط. إعادة التثبيت تمحو سنوات. يوجد زر «إعادة تعيين» ولا يوجد عكسه.</p>
+    <p class="why"><code>settings_screen.dart:452</code></p>
+    <div class="fix"><b>الإصلاح:</b> تصدير/استيراد ملف JSON محلي (بلا حساب ولا سحابة) — ينسجم مع وعد «لا تتبّع».</div>
+  </div>
+
+  <div class="card warn">
+    <h3><span class="lbl warn">فجوة</span> لا خطة ختمة</h3>
+    <p>الورد يقيس «صفحات اليوم» فقط. لا هدف بتاريخ انتهاء («الختمة في رمضان»)، ولا تقدّم في المصحف كامل، ولا وقفات (أحزاب/أرباع).</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">د</span> الأداء</h2>
+  <p class="lede">مشكلتان فقط، لكن الأولى منهما تُدفع ثمنها في كل ثانية يجلس فيها المستخدم على الرئيسية.</p>
+
+  <div class="card warn">
+    <h3>إعادة بناء اللوحة كل ثانية</h3>
+    <p>مشروحة في القسم «أ». الأثر التراكمي: استهلاك بطارية وهبوط إطارات على الأجهزة المتوسطة، في الشاشة التي يفتحها المستخدم أكثر من غيرها.</p>
+    <p class="why"><code>home_screen.dart:49</code> · <code>prayer_controller.dart:61</code></p>
+  </div>
+
+  <div class="card warn">
+    <h3>مسح خطّي على 6236 آية للعثور على أول آية في صفحة أو جزء</h3>
+    <p>يُستدعى لكل صف ظاهر في قائمة الأجزاء، وعند كل قلب صفحة في المصحف.</p>
+    <p class="why"><code>quran_controller.dart:182–203</code> · <code>quran_screen.dart:732</code></p>
+    <div class="fix"><b>الإصلاح:</b> بناء فهرس <code>page → (surah, ayah)</code> و<code>juz → …</code> مرة واحدة عند التحميل.</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">هـ</span> خطة التنفيذ</h2>
+  <p class="lede">مرتّبة بالأثر مقابل التكلفة. الموجة الأولى كلها إصلاحات صغيرة الحجم عالية الأثر.</p>
+
+  <div class="wave">
+    <div class="wave-h"><strong>الموجة الأولى</strong><span>إصلاحات سريعة · أسبوع واحد</span></div>
+    <div class="wave-b">
+      <div class="chips">
+        <span class="chip"><i>أ1</i>تصفير الأذكار يوميًا</span>
+        <span class="chip"><i>أ2</i>حصر الثانية في العدّاد</span>
+        <span class="chip"><i>أ3</i>البحث ينتقل لتبويب السور</span>
+        <span class="chip"><i>أ5</i>ثيم المصحف محلي</span>
+        <span class="chip"><i>أ6</i>نقر الإشعار يفتح المواقيت</span>
+        <span class="chip"><i>أ8</i>زر الرجوع</span>
+        <span class="chip"><i>أ9</i>دخول تلقائي من السبلاش</span>
+        <span class="chip"><i>أ10</i>الإصدار من الحزمة</span>
+        <span class="chip"><i>ج3</i>إبقاء الشاشة مضاءة</span>
+        <span class="chip"><i>ب1</i>حذف بطاقة الترحيب</span>
+        <span class="chip"><i>ب2</i>إصلاح الاختصارات</span>
+        <span class="chip"><i>ب3</i>البطاقة قابلة للنقر</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wave">
+    <div class="wave-h"><strong>الموجة الثانية</strong><span>موثوقية القراءة والاستماع · 2–3 أسابيع</span></div>
+    <div class="wave-b">
+      <div class="chips">
+        <span class="chip"><i>أ7</i>أفق الإشعارات 30–60 يومًا</span>
+        <span class="chip"><i>أ11</i>قياس قراءة حقيقي</span>
+        <span class="chip"><i>ج1</i>تشغيل في الخلفية</span>
+        <span class="chip"><i>ج2</i>تتبّع التلاوة في القارئين</span>
+        <span class="chip"><i>أ4</i>توحيد البحث</span>
+        <span class="chip"><i>د2</i>فهرس الصفحات والأجزاء</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wave">
+    <div class="wave-h"><strong>الموجة الثالثة</strong><span>توسيع المنتج · لاحقًا</span></div>
+    <div class="wave-b">
+      <div class="chips">
+        <span class="chip"><i>ج4</i>أذان صوتي</span>
+        <span class="chip"><i>ج5</i>تفسير وترجمة</span>
+        <span class="chip"><i>ج6</i>تذكير بالورد</span>
+        <span class="chip"><i>ج7</i>تصدير واستيراد</span>
+        <span class="chip"><i>ج8</i>خطة ختمة</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <h3>ما التزمت به أثناء المراجعة</h3>
+    <ul>
+      <li>لم أقترح أي تحليلات أو تتبّع أو جمع بيانات — وعد المنتج يبقى كما هو، وكل ما سبق يعمل محليًا على الجهاز.</li>
+      <li>لم أمسّ قاعدة «الصفحة لا تُقتطع»؛ اقتراح إبقاء الشاشة مضاءة وتتبّع التلاوة لا يغيّر تخطيط الصفحة إطلاقًا.</li>
+      <li>لم أقترح أي خدمة سحابية أو حساب. التصدير المقترح ملف محلي.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  مراجعة مسار الاستخدام · زاد · 21 أكتوبر 2026 — كل مرجع في هذا الملف يشير إلى الشيفرة الحالية في <span style="font-family:var(--mono);direction:ltr;display:inline-block">lib/</span>
+</footer>
+
+</div>
+</body>
+</html>

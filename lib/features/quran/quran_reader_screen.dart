@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../data/models/quran_models.dart';
 import '../../l10n/app_localizations.dart';
+import '../../state/audio_controller.dart';
 import '../../state/quran_controller.dart';
 import '../../state/settings_controller.dart';
 import '../../widgets/common.dart';
@@ -146,9 +147,16 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               ),
             ),
           ),
-          RecitationBar(
-            surahNumber: surah.number,
-            surahLabel: surah.arabicName,
+          // One button, not a permanent player bar: the transport only appears
+          // after the user has actually asked to listen.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              ZadSpacing.md,
+              ZadSpacing.sm,
+              ZadSpacing.md,
+              ZadSpacing.sm,
+            ),
+            child: ListenBar(surah: surah, initialAyah: _highlightedAyah),
           ),
           _ReaderBottomBar(
             surah: surah,
@@ -299,6 +307,30 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               const SizedBox(height: ZadSpacing.md),
               const ZadDivider(),
               const SizedBox(height: ZadSpacing.sm),
+              // Listening to *this* ayah is the most likely thing the user
+              // wants from a tapped verse, so it is the first action.
+              _SheetAction(
+                icon: Icons.headphones_rounded,
+                label: l10n.t('audio.listenToAyah'),
+                onTap: () async {
+                  final data = context.read<QuranController>().data;
+                  if (data == null) return;
+                  final audio = context.read<AudioController>();
+                  final reciter = context
+                      .read<SettingsController>()
+                      .settings
+                      .reciter;
+                  Navigator.of(sheetContext).pop();
+                  await audio.playAyah(
+                    surahNumber: surah.number,
+                    surahLabel: surah.arabicName,
+                    ayahNumber: verse.numberInSurah,
+                    ayahCount: surah.ayahCount,
+                    firstAyahGlobal: data.firstAyahGlobalNumber(surah.number),
+                    reciter: reciter,
+                  );
+                },
+              ),
               _SheetAction(
                 icon: bookmarked
                     ? Icons.bookmark_remove_outlined

@@ -51,8 +51,8 @@ class SettingsController extends ChangeNotifier {
   Future<void> setQuranFontScale(double scale) =>
       _apply(_settings.copyWith(quranFontScale: scale.clamp(0.8, 1.8)));
 
-  Future<void> setMushafPageTreatment(MushafPageTreatment treatment) =>
-      _apply(_settings.copyWith(mushafPageTreatment: treatment));
+  Future<void> setMushafTajweed(bool value) =>
+      _apply(_settings.copyWith(mushafTajweed: value));
 
   Future<void> setCalculationMethod(PrayerCalculationMethod method) =>
       _apply(_settings.copyWith(calculationMethod: method));
@@ -105,6 +105,10 @@ class SettingsController extends ChangeNotifier {
 
   Future<void> setKeepScreenAwake(bool value) =>
       _apply(_settings.copyWith(keepScreenAwake: value));
+
+  /// Sets the daily Qur'an portion in pages. `0` clears it.
+  Future<void> setDailyWirdPages(int pages) =>
+      _apply(_settings.copyWith(dailyWirdPages: pages.clamp(0, 604)));
 
   /// The reciter used for Qur'an audio. Only verified catalogue ids are
   /// accepted, so playback can never be pointed at an edition the CDN rejects.

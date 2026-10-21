@@ -34,6 +34,23 @@ class QuranReciter {
       'https://cdn.islamic.network/quran/audio-surah/'
       '$bitrate/$id/$surahNumber.mp3';
 
+  /// Streams one ayah as a small MP3 file.
+  ///
+  /// [ayahNumber] is the **global** ayah index in the whole Qur'an, `1..6236`
+  /// (`1` is Al-Fatiha 1:1, `8` is Al-Baqarah 2:1, `262` is 2:255), which is
+  /// exactly the numbering this CDN path uses. The same host, edition and
+  /// licence as [surahAudioUrl] serve it, and it answers Range requests too —
+  /// both were checked against the live CDN.
+  ///
+  /// Only the verified catalogue's editions are used here as well. Note that
+  /// this endpoint exists for *more* editions than the surah-level one (the
+  /// 28 editions excluded from [QuranReciters.all] are ayah-by-ayah only), but
+  /// the app deliberately stays on the verified list so that switching between
+  /// "surah" and "ayah" never lands on a dead edition.
+  String ayahAudioUrl(int ayahNumber) =>
+      'https://cdn.islamic.network/quran/audio/'
+      '$bitrate/$id/$ayahNumber.mp3';
+
   @override
   bool operator ==(Object other) =>
       other is QuranReciter && other.id == id;

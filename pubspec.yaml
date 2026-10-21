@@ -22,8 +22,18 @@ dependencies:
   shared_preferences: ^2.3.2
   path_provider: ^2.1.4
 
-  # Networking (Mushaf page assets)
+  # Networking (recitation audio, prayer-time fallback)
   http: ^1.2.2
+
+  # Font-based Mushaf rendering.
+  #
+  # `qcf_quran_plus` ships the King Fahd Complex QCF page fonts (one font per
+  # page, 604 of them) plus the page data needed to lay out every line exactly
+  # as printed. Text is drawn by the engine, so a page is sharp at any size and
+  # no page image has to be shipped or downloaded.
+  qcf_quran_plus: ^0.1.1
+  # Required by `qcf_quran_plus` (its surah reader is built on it).
+  scrollable_positioned_list: ^0.3.8
 
   # Quran recitation playback
   audioplayers: ^6.8.1
@@ -33,13 +43,16 @@ dependencies:
   flutter_compass: ^0.8.1
 
   # Prayer time calculation (pure Dart, no paid service)
-  adhan: ^2.0.0
+  adhan_dart: ^2.0.1
 
   # Sharing
   share_plus: ^10.1.2
 
   # Formatting / localization helpers (version pinned by flutter_localizations)
   intl: any
+  flutter_local_notifications: ^22.3.2
+  timezone: ^0.11.2
+  flutter_timezone: ^5.1.1
 
 dev_dependencies:
   flutter_test:

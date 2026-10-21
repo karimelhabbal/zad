@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../data/repositories/local_store.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/azkar_controller.dart';
 import '../../state/prayer_controller.dart';
@@ -12,6 +13,7 @@ import '../../state/quran_controller.dart';
 import '../../state/tasbeeh_controller.dart';
 import '../../widgets/common.dart';
 import '../../widgets/zad_logo.dart';
+import '../onboarding/onboarding_screen.dart';
 import '../shell/app_shell.dart';
 
 /// Branded splash: shows the Zad mark while the bundled Quran text and adhkar
@@ -86,10 +88,16 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _enter() {
+    // First run only: the tour explains what each section is for before the
+    // user lands in a five-tab app. Afterwards it is a settings entry.
+    final seen = context.read<LocalStore>().getBool(
+      LocalStore.keyOnboardingSeen,
+    );
+    final next = seen ? const AppShell() : const OnboardingScreen();
     Navigator.of(context).pushReplacement(
       PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 450),
-        pageBuilder: (_, _, _) => const AppShell(),
+        pageBuilder: (_, _, _) => next,
         transitionsBuilder: (_, animation, _, child) => FadeTransition(
           opacity: animation,
           child: child,

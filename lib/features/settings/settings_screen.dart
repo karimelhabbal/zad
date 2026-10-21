@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../data/models/quran_models.dart';
 import '../../data/models/settings_models.dart';
+import '../../data/services/notification_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/azkar_controller.dart';
 import '../../state/prayer_controller.dart';
@@ -13,6 +14,7 @@ import '../../state/settings_controller.dart';
 import '../../state/tasbeeh_controller.dart';
 import '../../widgets/common.dart';
 import '../../widgets/zad_app_bar.dart';
+import '../onboarding/onboarding_screen.dart';
 import '../prayer/prayer_times_screen.dart';
 
 /// Application settings: appearance, language, Quran reading preferences,
@@ -173,6 +175,37 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: ZadSpacing.md),
+                _FieldLabel(
+                  icon: Icons.flag_outlined,
+                  label: l10n.t('settings.dailyWird'),
+                ),
+                const SizedBox(height: ZadSpacing.xs),
+                Text(
+                  l10n.t('settings.dailyWirdBody'),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: ZadSpacing.sm),
+                Wrap(
+                  spacing: ZadSpacing.sm,
+                  runSpacing: ZadSpacing.sm,
+                  children: <Widget>[
+                    ZadFilterChip(
+                      label: l10n.t('settings.wirdOff'),
+                      selected: values.dailyWirdPages == 0,
+                      onTap: () => settings.setDailyWirdPages(0),
+                    ),
+                    for (final pages in const <int>[1, 2, 4, 8, 20])
+                      ZadFilterChip(
+                        label: l10n.t(
+                          'settings.wirdPages',
+                          args: <String, Object?>{'n': l10n.n(pages)},
+                        ),
+                        selected: values.dailyWirdPages == pages,
+                        onTap: () => settings.setDailyWirdPages(pages),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -232,7 +265,8 @@ class SettingsScreen extends StatelessWidget {
               children: <Widget>[
                 SwitchListTile(
                   value: values.prayerNotifications,
-                  onChanged: settings.setPrayerNotifications,
+                  onChanged: (value) =>
+                      _setReminder(context, settings, prayer: value),
                   title: Text(l10n.t('settings.prayerNotifications')),
                   subtitle: Text(l10n.t('settings.prayerNotificationsBody')),
                   secondary: const Icon(Icons.mosque_outlined, size: 20),
@@ -240,14 +274,16 @@ class SettingsScreen extends StatelessWidget {
                 const Divider(height: 1, indent: ZadSpacing.md),
                 SwitchListTile(
                   value: values.morningReminder,
-                  onChanged: settings.setMorningReminder,
+                  onChanged: (value) =>
+                      _setReminder(context, settings, morning: value),
                   title: Text(l10n.t('settings.morningReminder')),
                   secondary: const Icon(Icons.wb_twilight_rounded, size: 20),
                 ),
                 const Divider(height: 1, indent: ZadSpacing.md),
                 SwitchListTile(
                   value: values.eveningReminder,
-                  onChanged: settings.setEveningReminder,
+                  onChanged: (value) =>
+                      _setReminder(context, settings, evening: value),
                   title: Text(l10n.t('settings.eveningReminder')),
                   secondary: const Icon(Icons.nights_stay_outlined, size: 20),
                 ),
@@ -393,6 +429,18 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 const Divider(height: 1, indent: ZadSpacing.md),
                 SettingsTile(
+                  icon: Icons.slideshow_rounded,
+                  title: l10n.t('settings.replayIntro'),
+                  subtitle: l10n.t('settings.replayIntroBody'),
+                  trailing: const Icon(Icons.chevron_left_rounded, size: 18),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const OnboardingScreen(replay: true),
+                    ),
+                  ),
+                ),
+                const Divider(height: 1, indent: ZadSpacing.md),
+                SettingsTile(
                   icon: Icons.lock_outline_rounded,
                   title: l10n.t('settings.privacy'),
                   subtitle: l10n.t('settings.privacyBody'),
@@ -421,6 +469,42 @@ class SettingsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Turns one of the reminder switches on or off.
+  ///
+  /// The OS permission is requested *here*, at the moment the user asks for a
+  /// reminder, and never at launch: a permission dialog that appears before
+  /// the user has expressed any interest is the one people reflexively refuse.
+  /// If it is refused, the switch stays off rather than showing a state the
+  /// system will not honour.
+  Future<void> _setReminder(
+    BuildContext context,
+    SettingsController settings, {
+    bool? prayer,
+    bool? morning,
+    bool? evening,
+  }) async {
+    final l10n = AppLocalizations.of(context);
+    final value = prayer ?? morning ?? evening ?? false;
+
+    if (value) {
+      final granted = await NotificationService.instance.requestPermission();
+      if (!context.mounted) return;
+      if (!granted) {
+        showZadSnack(context, l10n.t('notif.permissionDenied'));
+        return;
+      }
+      if (prayer == true &&
+          !context.read<PrayerController>().location.isOk) {
+        // Saved anyway: it starts working the moment the location resolves.
+        showZadSnack(context, l10n.t('notif.needsLocation'));
+      }
+    }
+
+    if (prayer != null) await settings.setPrayerNotifications(prayer);
+    if (morning != null) await settings.setMorningReminder(morning);
+    if (evening != null) await settings.setEveningReminder(evening);
   }
 
   Future<void> _pickCalculationMethod(

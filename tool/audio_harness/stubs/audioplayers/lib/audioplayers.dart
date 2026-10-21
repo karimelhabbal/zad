@@ -25,6 +25,26 @@ class UrlSource {
   String toString() => 'UrlSource($url)';
 }
 
+/// A recording that already lives on disk.
+class DeviceFileSource {
+  const DeviceFileSource(this.path);
+
+  final String path;
+
+  @override
+  String toString() => 'DeviceFileSource($path)';
+}
+
+/// Mirrors `audioplayers`' exception for a source the platform refused.
+class AudioPlayerException implements Exception {
+  AudioPlayerException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'AudioPlayerException($message)';
+}
+
 class AudioPlayer {
   AudioPlayer({String? playerId}) {
     instances.add(this);
@@ -53,7 +73,13 @@ class AudioPlayer {
   Duration prepareDelay = Duration.zero;
   Duration reportedDuration = const Duration(seconds: 30);
 
+  /// When true every `UrlSource` play throws, while a `DeviceFileSource` still
+  /// plays. That is exactly the Windows Media Foundation behaviour the download
+  /// fallback exists for: the remote URL cannot be opened, a local file can.
+  bool failRemoteSources = false;
+
   final List<String> playedUrls = <String>[];
+  final List<String> playedFiles = <String>[];
   final List<Duration> seeks = <Duration>[];
   final List<double> rates = <double>[];
   int resumeCount = 0;
@@ -87,8 +113,14 @@ class AudioPlayer {
 
   Future<void> play(Object source) async {
     await _guard();
-    final url = source is UrlSource ? source.url : '$source';
-    playedUrls.add(url);
+    if (source is DeviceFileSource) {
+      playedFiles.add(source.path);
+    } else {
+      playedUrls.add(source is UrlSource ? source.url : '$source');
+    }
+    if (failRemoteSources && source is UrlSource) {
+      throw AudioPlayerException('Failed to set source: $source');
+    }
     if (prepareDelay > Duration.zero) {
       await Future<void>.delayed(prepareDelay);
     }

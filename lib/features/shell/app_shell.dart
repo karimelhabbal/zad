@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderProxyBox;
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -25,9 +26,10 @@ class AppShellState extends State<AppShell> {
   /// The dock's real height, measured after layout.
   ///
   /// It depends on the text scale and the locale, so measuring is more reliable
-  /// than a hard-coded constant that would silently drift.
-  final GlobalKey _dockKey = GlobalKey();
-  double _dockHeight = 0;
+  /// than a hard-coded constant that would silently drift. It lives in a
+  /// [ValueNotifier] rather than in `setState` so a measurement pass rebuilds
+  /// only the `MediaQuery` that publishes the clearance — not all five tabs.
+  final ValueNotifier<double> _dockHeight = ValueNotifier<double>(0);
 
   /// Lets any screen switch the active tab (e.g. the home quick actions).
   void select(int index) {
@@ -38,19 +40,14 @@ class AppShellState extends State<AppShell> {
   static AppShellState? of(BuildContext context) =>
       context.findAncestorStateOfType<AppShellState>();
 
-  void _measureDock() {
-    if (!mounted) return;
-    final box = _dockKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return;
-    final height = box.size.height;
-    if ((height - _dockHeight).abs() < 0.5) return;
-    setState(() => _dockHeight = height);
+  @override
+  void dispose() {
+    _dockHeight.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measureDock());
-
     final l10n = AppLocalizations.of(context);
     final media = MediaQuery.of(context);
     final destinations = <_Destination>[
@@ -89,12 +86,18 @@ class AppShellState extends State<AppShell> {
       // their last item while staying clear of both the dock and the Android
       // navigation bar. (Scaffold zeroes the body's bottom padding whenever a
       // bottomNavigationBar exists, which is what hid the overlap.)
-      body: MediaQuery(
-        data: media.copyWith(
-          padding: media.padding.copyWith(
-            bottom: _dockHeight + media.padding.bottom,
+      body: ValueListenableBuilder<double>(
+        valueListenable: _dockHeight,
+        builder: (context, dockHeight, child) => MediaQuery(
+          data: media.copyWith(
+            padding: media.padding.copyWith(
+              bottom: dockHeight + media.padding.bottom,
+            ),
           ),
+          child: child!,
         ),
+        // Rebuilt only when the shell rebuilds (tab change), never when the
+        // dock's height changes — that is the whole point of passing it here.
         child: IndexedStack(
           index: _index,
           children: const <Widget>[
@@ -106,11 +109,13 @@ class AppShellState extends State<AppShell> {
           ],
         ),
       ),
-      bottomNavigationBar: _SanctuaryNavigationBar(
-        key: _dockKey,
-        destinations: destinations,
-        selectedIndex: _index,
-        onSelected: select,
+      bottomNavigationBar: _MeasuredSize(
+        onChange: (size) => _dockHeight.value = size.height,
+        child: _SanctuaryNavigationBar(
+          destinations: destinations,
+          selectedIndex: _index,
+          onSelected: select,
+        ),
       ),
     );
   }
@@ -128,9 +133,48 @@ class _Destination {
   final IconData activeIcon;
 }
 
+/// Reports its child's laid-out size, once per actual change.
+///
+/// The previous approach measured a `GlobalKey` from a post-frame callback
+/// scheduled inside `build`, which queued work on **every** rebuild of the
+/// shell. This reports from `performLayout` instead and only when the size
+/// really changed, so a settled screen schedules nothing at all.
+class _MeasuredSize extends SingleChildRenderObjectWidget {
+  const _MeasuredSize({required this.onChange, required super.child});
+
+  final ValueChanged<Size> onChange;
+
+  @override
+  _MeasuredSizeBox createRenderObject(BuildContext context) =>
+      _MeasuredSizeBox(onChange);
+
+  @override
+  void updateRenderObject(BuildContext context, _MeasuredSizeBox renderObject) {
+    renderObject.onChange = onChange;
+  }
+}
+
+class _MeasuredSizeBox extends RenderProxyBox {
+  _MeasuredSizeBox(this.onChange);
+
+  ValueChanged<Size> onChange;
+
+  Size? _reported;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    final laidOut = size;
+    if (laidOut == _reported) return;
+    _reported = laidOut;
+    // Deferred: the listener rebuilds a MediaQuery, which cannot happen while
+    // the tree is laying out.
+    WidgetsBinding.instance.addPostFrameCallback((_) => onChange(laidOut));
+  }
+}
+
 class _SanctuaryNavigationBar extends StatelessWidget {
   const _SanctuaryNavigationBar({
-    super.key,
     required this.destinations,
     required this.selectedIndex,
     required this.onSelected,

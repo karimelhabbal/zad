@@ -1,0 +1,14 @@
+<!-- Status-bar notification icon.
+     Android renders the small icon as a monochrome mask, so it must be a
+     single-colour shape on a transparent background — a launcher mipmap would
+     show up as a white square. A bookmark ribbon keeps the app's reading
+     metaphor at 24dp. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M6,2 L18,2 L18,22 L12,17.2 L6,22 Z" />
+</vector>

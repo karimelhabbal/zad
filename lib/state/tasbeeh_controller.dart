@@ -219,6 +219,25 @@ class TasbeehController extends ChangeNotifier {
     return target > 0 && next % target == 0;
   }
 
+  /// Takes one count back — the fix for a mis-tap on the counter.
+  ///
+  /// Never goes below zero, and reverses the day's total as well, so the
+  /// statistics stay truthful instead of recording a tap the user undid.
+  /// Returns `false` when there was nothing to take back.
+  Future<bool> decrement() async {
+    final dhikr = active;
+    if (dhikr == null) return false;
+    final current = countFor(dhikr);
+    if (current <= 0) return false;
+    final next = current - 1;
+    _counters = <String, int>{..._counters, dhikr.storageId: next};
+    _stats = _stats.rollTo(_todayKey()).withDelta(-1);
+    notifyListeners();
+    await _repository.saveCounters(_counters);
+    await _repository.saveStats(_stats);
+    return true;
+  }
+
   /// Resets **only** the active dhikr's counter, leaving every other entry
   /// untouched.
   Future<void> resetActiveCounter() async {
